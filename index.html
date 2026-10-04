@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventaire – Gestion des stocks</title>
+<script>(function(){try{var t=localStorage.getItem('inventaire_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --card-rgb:255,255,255; --ink:#1c2430; --muted:#6a7482; --line:#e2e5ea;
+  --accent:#1f5fbf; --accent-ink:#ffffff; --accent-soft:#e6eefb;
+  --ok:#1a7f4b; --ok-soft:#e3f4ea; --warn:#a15c00; --warn-soft:#fdf0d8;
+  --bad:#b3261e; --bad-soft:#fbe6e4; --neutral-soft:#eceef2;
+  --pie-occ:#1f5fbf; --pie-free:#12b76a;
+  --shadow:0 1px 2px rgba(20,30,50,.06),0 4px 14px rgba(20,30,50,.05);
+  --radius:10px;
+  --cat-1:#2a78d6; --cat-2:#eb6834; --cat-3:#1baf7a; --cat-4:#eda100;
+  --cat-5:#e87ba4; --cat-6:#008300; --cat-7:#4a3aa7; --cat-8:#e34948;
+}
+:root[data-theme="dark"]{
+    --bg:#14171c; --card:#1c2027; --card-rgb:28,32,39; --ink:#e7eaef; --muted:#93a0b1; --line:#2b313b;
+    --accent:#5b93ee; --accent-ink:#0d1420; --accent-soft:#22314d;
+    --ok:#55c98a; --ok-soft:#173226; --warn:#f0b34d; --warn-soft:#3a2d14;
+    --bad:#f0776f; --bad-soft:#3a1c1a; --neutral-soft:#262b33;
+    --pie-occ:#5b93ee; --pie-free:#34d399;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --cat-1:#3987e5; --cat-2:#d95926; --cat-3:#199e70; --cat-4:#c98500;
+    --cat-5:#d55181; --cat-6:#008300; --cat-7:#9085e9; --cat-8:#e66767;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171c; --card:#1c2027; --card-rgb:28,32,39; --ink:#e7eaef; --muted:#93a0b1; --line:#2b313b;
+    --accent:#5b93ee; --accent-ink:#0d1420; --accent-soft:#22314d;
+    --ok:#55c98a; --ok-soft:#173226; --warn:#f0b34d; --warn-soft:#3a2d14;
+    --bad:#f0776f; --bad-soft:#3a1c1a; --neutral-soft:#262b33;
+    --pie-occ:#5b93ee; --pie-free:#34d399;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    --cat-1:#3987e5; --cat-2:#d95926; --cat-3:#199e70; --cat-4:#c98500;
+    --cat-5:#d55181; --cat-6:#008300; --cat-7:#9085e9; --cat-8:#e66767;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.2}
+a{color:var(--accent);text-decoration:none}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.right{text-align:right}
+.nowrap{white-space:nowrap}
+
+/* En-tête */
+header.top{background:rgba(var(--card-rgb),.72);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.top-in{max-width:1600px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:19px;letter-spacing:-.2px;display:flex;align-items:center;gap:9px;color:var(--ink)}
+.brand .ic{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px}
+nav.tabs{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+nav.tabs a{padding:7px 13px;border-radius:8px;color:var(--muted);font-weight:500}
+nav.tabs a:hover{background:var(--neutral-soft);color:var(--ink)}
+nav.tabs a.on{background:var(--accent-soft);color:var(--accent)}
+.status{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px 5px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.admin-wrap{position:relative}
+.admin-wrap .car{color:var(--muted);font-size:10px;margin-left:1px}
+.admin-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(10,20,40,.18);z-index:30;min-width:170px;padding:6px;display:flex;flex-direction:column;gap:2px}
+.admin-menu[hidden]{display:none}
+.admin-menu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:transparent;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+.admin-menu button:hover{background:var(--bg)}
+.admin-menu button.on{background:var(--accent-soft);font-weight:600}
+.status:hover{background:var(--neutral-soft)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--ok)} .dot.warn{background:#e0a020} .dot.bad{background:var(--bad)}
+
+/* Recherche */
+.sband{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px}
+.swrap{max-width:1600px;margin:0 auto;position:relative}
+#q{width:100%;padding:13px 16px 13px 44px;font-size:17px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);outline:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236a7482' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:14px 50%}
+#q:focus{border-color:var(--accent);background-color:var(--card)}
+.sres{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(10,20,40,.18);max-height:70vh;overflow:auto;z-index:30}
+.sres .grp{padding:8px 14px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ri{display:flex;align-items:center;gap:12px;padding:9px 14px;cursor:pointer;border-top:1px solid transparent}
+.ri:hover,.ri.sel{background:var(--accent-soft)}
+.ri .t{font-weight:600}
+.ri .s{font-size:13px;color:var(--muted)}
+.ri .r{margin-left:auto;text-align:right;font-size:13px}
+.sres .none{padding:16px;color:var(--muted)}
+
+main{max-width:1600px;margin:0 auto;padding:22px 20px 60px}
+#ftr{text-align:center;color:var(--muted);font-size:11px;padding:0 20px 18px;opacity:.6}
+.page-h{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.page-h h2{font-size:22px}
+.page-h .sp{flex:1}
+.date-field{display:flex;gap:7px;align-items:center;font-size:13px;font-weight:600;color:var(--muted)}
+.date-field input{padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-weight:400;font-size:14px}
+
+/* Cartes / grilles */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card.pad{padding:16px 18px}
+.dash-top{display:grid;grid-template-columns:1fr 1.4fr;gap:12px;margin-bottom:18px;align-items:stretch}
+.kpis-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi.mini{padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
+.kpi.mini .v{font-size:19px}
+.kpi.mini .l{font-size:11px;line-height:1.25}
+.kpi.occ{display:flex;align-items:center;gap:22px;padding:20px 26px;flex-wrap:wrap;min-width:0}
+.kpi.occ .stat{min-width:120px}
+.kpi.occ .v{font-size:46px}
+.kpi.occ .l{font-size:14px}
+@media (max-width:760px){.dash-top{grid-template-columns:1fr}}
+.refs-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.refs-2col > *{min-width:0}
+.refs-2col .tw{margin:0}
+@media (max-width:900px){.refs-2col{grid-template-columns:1fr}}
+.pie{width:96px;height:96px;border-radius:50%;flex:none}
+.pie-lgd{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:6px;min-width:0}
+.pie-lgd .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.pie-lgd .dot.occ{background:var(--pie-occ)}
+.pie-lgd .dot.free{background:var(--pie-free)}
+.kpi.warn .v{color:var(--warn)} .kpi.bad .v{color:var(--bad)}
+.cols{display:grid;grid-template-columns:1fr 1.5fr;gap:16px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.sec-h{display:flex;align-items:center;gap:10px;padding:14px 18px 8px}
+.sec-h h3{font-size:16px;flex:1}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Boutons */
+.btn{border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--neutral-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Tableaux */
+.tw{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+/* Fiche individuelle : table à 7 colonnes plus dense — padding resserré pour que tout tienne sans
+   défilement horizontal, y compris sur mobile. */
+.tbl-tight th,.tbl-tight td{padding:6px 5px}
+.tbl-tight .cat-dot{width:7px;height:7px;margin-right:5px}
+.tbl-tight .btn.sm{padding:3px 6px;font-size:11px}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.click{cursor:pointer}
+.tbl tr.click:hover td{background:var(--accent-soft)}
+.tbl tr.catrow td{background:var(--neutral-soft);font-weight:600;font-size:16px;padding:7px 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+.cat-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.tbl tr.off td{opacity:.5;text-decoration:line-through}
+.tbl tr.sel td{background:var(--accent-soft)}
+.tbl td.num,.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.empty{padding:26px 18px;color:var(--muted);text-align:center}
+
+/* Pastilles */
+.b{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--neutral-soft);color:var(--muted);white-space:nowrap}
+.b.ok{background:var(--ok-soft);color:var(--ok)} .b.warn{background:var(--warn-soft);color:var(--warn)}
+.b.bad{background:var(--bad-soft);color:var(--bad)} .b.blue{background:var(--accent-soft);color:var(--accent)}
+
+/* Filtres */
+.filters{display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 14px;align-items:center}
+.filters input,.filters select{padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.filters label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
+
+/* Fiche individuelle */
+.fiche-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.avatar{width:56px;height:56px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex:none}
+.fiche-head h2{font-size:24px}
+.fiche-head .sp{flex:1}
+.notes{padding:10px 14px;margin-bottom:16px;background:var(--warn-soft);border-radius:8px;font-size:14px;white-space:pre-wrap}
+.back{display:inline-block;margin-bottom:10px;color:var(--muted)}
+.sign{display:none}
+
+/* Modales */
+.overlay{position:fixed;inset:0;background:rgba(10,15,25,.5);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;overflow:auto;z-index:100}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.35);margin:0}
+.modal.wide{max-width:920px}
+.mh{display:flex;align-items:center;padding:16px 20px 6px}
+.mh h3{flex:1;font-size:18px}
+.x{border:none;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted)}
+.mb{padding:8px 20px 6px}
+.mf{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.full{grid-column:1/-1}
+.mb label,.grid2 label{display:block;font-size:13px;font-weight:600;color:var(--muted)}
+.mb label input,.mb label select,.mb label textarea,.grid2 label input,.grid2 label select,.grid2 label textarea{display:block;width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:400;color:var(--ink)}
+.mb label input:focus,.mb label select:focus,.mb label textarea:focus,.grid2 label input:focus,.grid2 label select:focus,.grid2 label textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;background:var(--card)}
+.mb textarea{min-height:70px;resize:vertical}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.mb label .hint{font-weight:400}
+.hint.bad{color:var(--bad);font-weight:600!important}
+.mb label.inl{display:flex;gap:9px;align-items:flex-start;font-weight:500;color:var(--ink);padding:9px 12px;border-radius:8px;background:var(--warn-soft)}
+.mb label.inl[hidden],.mb label[hidden]{display:none}
+.mb label.inl input{width:auto;margin:3px 0 0;display:inline-block}
+.err{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad);font-size:14px}
+.sect{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.static{padding:8px 10px;border:1px dashed var(--line);border-radius:8px;margin-top:4px;font-weight:500;color:var(--ink)}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:200}
+#toast.on{opacity:1}
+
+.welcome{max-width:640px;margin:40px auto;padding:28px}
+.welcome h2{font-size:24px;margin-bottom:6px}
+.welcome .opt{display:block;width:100%;text-align:left;margin-top:12px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+.welcome .opt:hover{border-color:var(--accent);background:var(--accent-soft)}
+.welcome .opt b{display:block}
+.banner{margin-bottom:14px;padding:12px 16px;border-radius:10px;background:var(--warn-soft);color:var(--warn);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.banner span{flex:1}
+
+/* Filigrane : écusson de l'Administration pénitentiaire (au-dessus du contenu, sous les fenêtres, imprimé avec les fiches) */
+#wm{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;opacity:.07}
+#wm img{width:min(72vmin,560px);height:auto;-webkit-user-select:none;user-select:none}
+:root[data-theme="dark"] #wm{opacity:.06}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #wm{opacity:.06}}
+@media print{#wm{opacity:.09}}
+@media print{
+  header.top,.sband,nav.tabs,.noprint,.back,#toast,.overlay{display:none!important}
+  body{background:#fff;color:#000;font-size:10.5px}
+  main{padding:0;max-width:none}
+  .card{box-shadow:none;border:1px solid #bbb}
+  .sign{display:block;margin-top:40px;font-size:14px}
+  .sign div{margin-top:36px;border-top:1px solid #000;width:260px;padding-top:4px}
+  .btn{display:none!important}
+  /* Fiche individuelle : « Imprimer la fiche » et « Imprimer l'historique » sont deux impressions
+     distinctes, choisies via une classe posée sur <body> avant window.print(). */
+  body.print-fiche-only .print-hist{display:none!important}
+  body.print-hist-only .print-fiche{display:none!important}
+  /* Fiches Entrée/Sortie : la mise en page 2 colonnes doit être conservée à l'impression même si la
+     largeur de la page imprimée est inférieure au seuil de 900px qui la ferait passer sur 1 colonne
+     à l'écran ; la police est réduite pour que toutes les références restent lisibles sur la feuille. */
+  .refs-2col{grid-template-columns:1fr 1fr!important;gap:8px}
+  .refs-2col .card{border:1px solid #bbb}
+  .tbl th{font-size:8.5px;padding:3px 6px}
+  .tbl td{padding:2px 6px}
+  /* Fond sombre fixe (indépendant du thème clair/sombre de l'écran) pour que le texte blanc des
+     catégories reste lisible à l'impression dans tous les cas. */
+  .tbl tr.catrow td{font-size:10.5px;padding:3px 6px;background:#1c2430!important;color:#fff}
+  .tbl tr.catrow td .muted{color:rgba(255,255,255,.75)}
+  .tbl td b{font-size:10px!important}
+  .cat-dot{width:7px;height:7px;margin-right:5px}
+  .page-h h2,.fiche-head h2{font-size:15px}
+  .page-h,.fiche-head{margin-bottom:8px}
+  .sec-h h3{font-size:12px}
+  /* La colonne actions (noprint) disparaît à l'impression : repasser en largeurs automatiques évite
+     qu'elle laisse un vide à droite — les 3 dernières colonnes se resserrent et Référence récupère
+     tout l'espace libéré. */
+  .tbl-ops{table-layout:auto!important}
+  .tbl-ops th:first-child,.tbl-ops td:first-child{width:auto!important}
+  tr{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="wm" aria-hidden="true"><img alt="" src="data:image/png;base64,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"></div>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="ic">IN</span>Inventaire</div>
+    <nav class="tabs" id="tabs">
+      <a href="#/personnes" data-tab="fiches">Fiches</a>
+      <a href="#/sortie" data-tab="sortie">Sortie</a>
+      <a href="#/entree" data-tab="entree">Entrée</a>
+      <a href="#/inventaire" data-tab="inventaire">Références</a>
+      <a href="#/mouvements" data-tab="mouvements">Historique</a>
+      <a href="#/archives" data-tab="archives">Archives</a>
+    </nav>
+    <div class="status" id="theme-btn" data-act="cycleTheme" title="Changer de thème (clair / sombre / auto)"><span id="theme-t"></span></div>
+    <div class="admin-wrap">
+      <div class="status" id="admin-btn" data-act="toggleAdminMenu" title="Le mode Administrateur est requis uniquement pour les suppressions définitives"><span class="dot" id="admin-dot"></span><span id="admin-t">Standard</span><span class="car">▾</span></div>
+      <div class="admin-menu" id="admin-menu" hidden>
+        <button type="button" data-act="setLevel" data-lvl="standard"><span class="dot" id="lvl-dot-standard"></span>Standard</button>
+        <button type="button" data-act="setLevel" data-lvl="admin"><span class="dot" id="lvl-dot-admin"></span>Administrateur</button>
+      </div>
+    </div>
+    <div class="status" id="status" data-act="data" title="Données et sauvegarde"><span class="dot"></span><span id="status-t"></span></div>
+  </div>
+</header>
+
+<div class="sband">
+  <div class="swrap">
+    <input id="q" type="search" placeholder="Nom, Écrou, Référence, Catégorie…  ( touche / )" autocomplete="off" spellcheck="false">
+    <div class="sres" id="sres" hidden></div>
+  </div>
+</div>
+
+<main id="view"></main>
+<footer id="ftr" class="noprint">by Office&amp;Code</footer>
+<div id="toast"></div>
+<input type="file" id="imp" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* =====================================================================
+   INVENTAIRE – appli autonome (aucun serveur)
+   Modèle : le journal des mouvements est la source de vérité.
+   Chaque fiche individuelle (personne) a son propre stock réel par référence
+   (Entrée = +, Sortie = −). Le stock max possible est défini une fois par
+   référence et s'applique de la même façon à toutes les fiches.
+   => fusion sûre entre plusieurs postes qui partagent le même fichier .json.
+   ===================================================================== */
+
+/* ---------- Outils ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const fmtDate = s => s ? s.split('-').reverse().join('/') : '';
+const CATEGORIES_DEFAUT = ['Vêtements', 'Linge de toilette', 'Linge de maison', 'Nécessaire de cuisine', 'Divers'];
+/* Secteur d'hébergement : chaque référence et chaque fiche individuelle appartient à un ou plusieurs
+   catalogues (CDH, CDF, ou d'autres bâtiments ajoutés depuis l'application), dont les quotas diffèrent.
+   Détermine quelles références sont proposées/affichées pour une fiche. La liste des secteurs n'est plus
+   figée dans le code : elle vit dans DB.secteurs (modifiable via le bouton « + Nouveau secteur »).
+   DEFAULT_SECTEURS sert de valeur de départ / de repli si la base est vide ou incomplète. */
+const DEFAULT_SECTEURS = [['cdh', 'CDH'], ['cdf', 'CDF']];
+const secteursList = () => (DB && Array.isArray(DB.secteurs) && DB.secteurs.length ? DB.secteurs.map(s => [s.id, s.label]) : DEFAULT_SECTEURS);
+const secteurLabel = s => { const list = secteursList(); return (list.find(x => x[0] === (s || list[0][0])) || list[0])[1]; };
+/* Une référence peut, elle, appartenir à plusieurs secteurs à la fois (ex. un article commun à tous les
+   catalogues) : a.secteurs est un tableau de codes ('cdh'/'cdf'/...). artSecteurs() normalise les anciennes
+   fiches qui n'avaient qu'un a.secteur (chaîne) unique vers ce tableau. */
+const artSecteurs = a => (Array.isArray(a.secteurs) && a.secteurs.length ? a.secteurs : (a.secteur ? [a.secteur] : ['cdh']));
+const secteursLabel = arr => {
+  const list = arr && arr.length ? arr : ['cdh'];
+  const all = secteursList();
+  if (all.length > 1 && all.every(([c]) => list.includes(c))) return 'Tous les secteurs';
+  return all.filter(([c]) => list.includes(c)).map(([, l]) => l).join(' + ') || secteurLabel(list[0]);
+};
+/* Génère un code court (minuscules, sans accents/espaces) et unique pour un nouveau secteur à partir de
+   son libellé, puis l'ajoute à DB.secteurs. Retourne le code créé. */
+function addSecteur(label){
+  const base = norm(label).replace(/[^a-z0-9]+/g, '').slice(0, 14) || 'secteur';
+  const used = new Set(secteursList().map(([c]) => c));
+  let code = base, i = 2;
+  while (used.has(code)) code = base + i++;
+  DB.secteurs.push({ id:code, label, updatedAt:Date.now() });
+  commit();
+  return code;
+}
+const pname = p => ((p.nom || '').toUpperCase() + ' ' + (p.prenom || '')).trim();
+const alabel = a => a.nom;
+const FSA = typeof window.showOpenFilePicker === 'function';
+const LS = {
+  get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch {} }
+};
+
+/* ---------- État ---------- */
+/* Fiche inventaire de référence (catalogue de départ, secteur CDH) : chargée à la première utilisation et après
+   une Remise à 0. Stock max = plafond strict par fiche (aucune tolérance n'est modélisée séparément : le plafond
+   s'applique tel quel). Note CP Sud Francilien n°26-048 du 16/09/2026. */
+const CATALOGUE_DEFAUT = [
+  ['Vêtements', 'Tee-shirts / débardeurs / chemisettes', 20],
+  ['Vêtements', 'Sous-vêtements', 30],
+  ['Vêtements', 'Paires de chaussettes', 20],
+  ['Vêtements', 'Pantalons / Shorts / Joggings', 35],
+  ['Vêtements', 'Pulls', 10],
+  ['Vêtements', 'Gilets / Vestes de survêtement', 5],
+  ['Vêtements', 'Manteaux / Blousons', 2],
+  ['Vêtements', 'Maillots de bain', 2],
+  ['Vêtements', 'Hauts longs (tee-shirt manches longues / sous-pull, chemises)', 20],
+  ['Vêtements', 'Tapis de prière', 2],
+  ['Vêtements', 'Chaussures (baskets, claquettes, chaussons)', 10],
+  ['Vêtements', 'Ceinture', 2],
+  ['Vêtements', 'Bonnet', 2],
+  ['Vêtements', 'Bob / Casquettes', 2],
+  ['Vêtements', 'Écharpe', 2],
+  ['Vêtements', 'Paire de gants', 2],
+  ['Linge de toilette', 'Peignoir sans capuche', 1],
+  ['Linge de toilette', 'Serviettes (petites, moyennes ou grandes)', 8],
+  ['Linge de toilette', 'Gants de toilette', 4],
+  ['Linge de toilette', 'Fleurs de douche', 2],
+  ['Linge de maison', 'Oreiller', 2],
+  ['Linge de maison', 'Taie d’oreiller', 4],
+  ['Linge de maison', 'Draps (dont 2 personnels)', 4],
+  ['Linge de maison', 'Couette', 1],
+  ['Linge de maison', 'Housse de couette', 2],
+  ['Linge de maison', 'Plaid', 1],
+  ['Linge de maison', 'Couverture (fournies par l’administration)', 2],
+  ['Nécessaire de cuisine', 'Plaque chauffante', 1],
+  ['Nécessaire de cuisine', 'Mixeur - plongeur', 1],
+  ['Nécessaire de cuisine', 'Batteur', 1],
+  ['Nécessaire de cuisine', 'Casserole', 1],
+  ['Nécessaire de cuisine', 'Poêle', 2],
+  ['Nécessaire de cuisine', 'Fait-tout', 1],
+  ['Nécessaire de cuisine', 'Machine à café', 1],
+  ['Nécessaire de cuisine', 'Passoire en plastique', 1],
+  ['Nécessaire de cuisine', 'Bouilloire', 1],
+  ['Nécessaire de cuisine', 'Saladier en plastique', 1],
+  ['Nécessaire de cuisine', 'Plat à gâteau', 1],
+  ['Nécessaire de cuisine', 'Fouet plastique', 1],
+  ['Divers', 'CD / DVD', 40],
+  ['Divers', 'HIFI (Home Cinéma 2.1)', 1],
+  ['Divers', 'Lecteur DVD', 1],
+  ['Divers', 'Réveil', 1],
+  ['Divers', 'Montres', 2],
+  ['Divers', 'Calculatrice', 1],
+  ['Divers', 'Ventilateur', 1],
+  ['Divers', 'Chauffage d’appoint', 1],
+];
+/* Catalogue de référence, secteur CDF — mêmes catégories que le CDH mais quotas et désignations propres
+   (ex. sous-vêtements suivis séparément en hauts/bas, articles spécifiques : robes/jupes, foulards, talons,
+   collants, appareils de coiffage…). Note CP Sud Francilien n°26-048 du 16/09/2026. */
+const CATALOGUE_CDF = [
+  ['Vêtements', 'Tee-shirts / débardeurs', 20],
+  ['Vêtements', 'Sous-vêtements (hauts)', 30],
+  ['Vêtements', 'Sous-vêtements (bas)', 30],
+  ['Vêtements', 'Paires de chaussettes', 15],
+  ['Vêtements', 'Pantalons / Shorts', 15],
+  ['Vêtements', 'Leggings', 15],
+  ['Vêtements', 'Robes / Jupes', 15],
+  ['Vêtements', 'Pulls', 10],
+  ['Vêtements', 'Gilets', 5],
+  ['Vêtements', 'Manteaux / Blousons', 2],
+  ['Vêtements', 'Pyjamas', 8],
+  ['Vêtements', 'Maillots de bain', 2],
+  ['Vêtements', 'Vêtement cultuel (ex. djellaba)', 2],
+  ['Vêtements', 'Tapis de prière', 2],
+  ['Vêtements', 'Foulards', 4],
+  ['Vêtements', 'Chaussures (baskets)', 4],
+  ['Vêtements', 'Claquettes / Chaussons', 2],
+  ['Vêtements', 'Talons', 3],
+  ['Vêtements', 'Collants', 5],
+  ['Vêtements', 'Ceinture', 2],
+  ['Vêtements', 'Bonnet', 2],
+  ['Vêtements', 'Bob / Casquettes', 2],
+  ['Vêtements', 'Écharpe', 2],
+  ['Vêtements', 'Paire de gants', 2],
+  ['Linge de toilette', 'Peignoir sans capuche', 1],
+  ['Linge de toilette', 'Grandes serviettes', 4],
+  ['Linge de toilette', 'Petites serviettes (dont 2 personnelles)', 4],
+  ['Linge de toilette', 'Gants de toilette', 2],
+  ['Linge de toilette', 'Fleurs de douche', 2],
+  ['Linge de maison', 'Oreiller', 2],
+  ['Linge de maison', 'Taie d’oreiller', 4],
+  ['Linge de maison', 'Draps (dont 2 personnels)', 4],
+  ['Linge de maison', 'Couverture (dont 1 personnelle)', 2],
+  ['Nécessaire de cuisine', 'Plaque chauffante', 1],
+  ['Nécessaire de cuisine', 'Mixeur - plongeur', 1],
+  ['Nécessaire de cuisine', 'Casserole', 1],
+  ['Nécessaire de cuisine', 'Poêle', 1],
+  ['Nécessaire de cuisine', 'Fait-tout', 1],
+  ['Nécessaire de cuisine', 'Machine à café', 1],
+  ['Nécessaire de cuisine', 'Passoire en plastique', 1],
+  ['Nécessaire de cuisine', 'Bouilloire', 1],
+  ['Nécessaire de cuisine', 'Saladier en plastique', 1],
+  ['Nécessaire de cuisine', 'Plat à gâteau', 1],
+  ['Nécessaire de cuisine', 'Fouet plastique', 1],
+  ['Divers', 'CD', 20],
+  ['Divers', 'HIFI (Home Cinéma 2.1)', 1],
+  ['Divers', 'Lecteur DVD', 1],
+  ['Divers', 'DVD', 20],
+  ['Divers', 'Réveil', 1],
+  ['Divers', 'Montres', 2],
+  ['Divers', 'Calculatrice', 1],
+  ['Divers', 'Sex-toys', 1],
+  ['Divers', 'Boucleur', 1],
+  ['Divers', 'Épilateur électrique', 1],
+  ['Divers', 'Fer à lisser', 1],
+  ['Divers', 'Sèche-cheveux', 1],
+  ['Divers', 'Ventilateur', 1],
+  ['Divers', 'Chauffage d’appoint', 1],
+];
+const emptyDB = () => ({ app:'inventaire', version:2, updatedAt:0,
+  secteurs: DEFAULT_SECTEURS.map(([id, label]) => ({ id, label, updatedAt:0 })),
+  articles: [
+    ...CATALOGUE_DEFAUT.map(([categorie, nom, stockMax], i) => ({ id:'a' + (i + 1), ref:'', nom, categorie, stockMax, secteurs:['cdh'], archive:false, createdAt:0, updatedAt:0 })),
+    ...CATALOGUE_CDF.map(([categorie, nom, stockMax], i) => ({ id:'f' + (i + 1), ref:'', nom, categorie, stockMax, secteurs:['cdf'], archive:false, createdAt:0, updatedAt:0 })),
+  ],
+  personnes:[], mouvements:[] });
+function migrate(d){
+  /* La liste des secteurs (CDH, CDF, autres bâtiments) vit désormais dans d.secteurs ; on garantit
+     qu'elle existe toujours, même pour une base créée avant l'ajout de cette fonctionnalité. */
+  if (!Array.isArray(d.secteurs) || !d.secteurs.length) d.secteurs = DEFAULT_SECTEURS.map(([id, label]) => ({ id, label, updatedAt:0 }));
+  /* a.secteurs (tableau) remplace l'ancien a.secteur (chaîne unique) : une référence peut désormais
+     appartenir à plusieurs secteurs à la fois. artSecteurs() convertit à la volée les anciennes bases. */
+  for (const a of d.articles) { if (a.stockMax === undefined) a.stockMax = +a.stockMax || 0; a.secteurs = artSecteurs(a); delete a.secteur; }
+  // Mise à jour d'une base existante créée avant l'ajout du secteur CDF : on complète son catalogue
+  // avec les références CDF manquantes, sans toucher à ce qui existe déjà (ids non réutilisés).
+  if (!d.articles.some(a => a.secteurs.includes('cdf'))) {
+    const used = new Set(d.articles.map(a => a.id)); let i = 1;
+    for (const [categorie, nom, stockMax] of CATALOGUE_CDF) {
+      let id; do { id = 'f' + (i++); } while (used.has(id));
+      used.add(id);
+      d.articles.push({ id, ref:'', nom, categorie, stockMax, secteurs:['cdf'], archive:false, createdAt:0, updatedAt:0 });
+    }
+  }
+  for (const p of d.personnes) { if (!p.secteur) p.secteur = 'cdh'; }
+  return d;
+}
+function normalizeDB(o){
+  const d = emptyDB();
+  if (o && typeof o === 'object') {
+    for (const k of ['secteurs','articles','personnes','mouvements']) if (Array.isArray(o[k])) d[k] = o[k];
+    d.updatedAt = o.updatedAt || 0;
+  }
+  return migrate(d);
+}
+let DB = emptyDB();
+let USER_MAT = '';
+let userLevel = 'standard'; // mode d'habilitation : standard (saisie) ou admin (modifications, archivage, suppression) — en mémoire, non persisté
+const LEVELS = { standard:0, admin:1 };
+const LEVEL_LABEL = { standard:'Standard', admin:'Administrateur' };
+const ADMIN_PWD = 'admininv'; // mot de passe du mode Administrateur, fixe (non modifiable dans l'interface)
+const levelAtLeast = lvl => LEVELS[userLevel] >= LEVELS[lvl];
+const LEVEL_DOT = { standard:'', admin:'bad' };
+let CACHE = null;
+let fileHandle = null, mode = 'local', lastMod = 0;
+let dirty = false, saving = false, resave = false, saveT = null;
+let saveState = 'idle', saveErr = '', lastSaved = null, needPerm = false, pendingHandle = null;
+const UI = { q:'', cat:'', secteur:'', showArchA:false, aq:'', showArch:false, mq:'', mtype:'', mvtSel:null };
+
+function mergeLists(a, b){
+  const map = new Map();
+  for (const x of a) map.set(x.id, x);
+  for (const x of b) { const y = map.get(x.id); if (!y || (x.updatedAt || 0) > (y.updatedAt || 0)) map.set(x.id, x); }
+  return [...map.values()];
+}
+function mergeDB(a, b){
+  return migrate({ app:'inventaire', version:2, updatedAt:Math.max(a.updatedAt||0, b.updatedAt||0),
+    secteurs:mergeLists(a.secteurs || [], b.secteurs || []),
+    articles:mergeLists(a.articles, b.articles), personnes:mergeLists(a.personnes, b.personnes), mouvements:mergeLists(a.mouvements, b.mouvements) });
+}
+function sig(){
+  let mx = 0;
+  for (const k of ['secteurs','articles','personnes','mouvements']) for (const x of DB[k]) if ((x.updatedAt||0) > mx) mx = x.updatedAt;
+  return DB.secteurs.length + '.' + DB.articles.length + '.' + DB.personnes.length + '.' + DB.mouvements.length + '.' + mx;
+}
+const hasData = () => DB.articles.length || DB.personnes.length || DB.mouvements.length;
+
+/* ---------- Calculs (stock par fiche) ---------- */
+/* Le journal des mouvements est la source de vérité : le stock réel d'une référence, pour UNE fiche donnée,
+   = somme de ses « entrée » − somme de ses « sortie » (mouvements non annulés). Le stock max est le même
+   pour toutes les fiches et se règle une fois, sur la référence elle-même. */
+function calc(){
+  if (CACHE) return CACHE;
+  const active = new Set(DB.personnes.filter(p => !p.archive).map(p => p.id));
+  const held = {}, heldArt = {}, lastEntree = {}, nbHolders = {};
+  let heldTotal = 0;
+  /* held/heldPerson : fiche par fiche, y compris archivées/supprimées (conservé en base pour l'historique).
+     heldArt/nbHolders/heldTotal : statistiques par référence / globales — seule une fiche active y compte. */
+  const addHeld = (p, a, q, stat) => {
+    if (!p) return;
+    (held[p] = held[p] || {})[a] = ((held[p][a]) || 0) + q;
+    if (stat) { heldArt[a] = (heldArt[a] || 0) + q; heldTotal += q; }
+  };
+  for (const m of DB.mouvements) {
+    if (m.annule) continue;
+    const a = m.articleId, p = m.personneId, q = +m.qte || 0, stat = !p || active.has(p);
+    switch (m.type) {
+      case 'entree': addHeld(p, a, q, stat); if (p && (!lastEntree[p+'|'+a] || m.date >= lastEntree[p+'|'+a])) lastEntree[p+'|'+a] = m.date; break;
+      case 'sortie': case 'archivage': addHeld(p, a, -q, stat); break;
+    }
+  }
+  const heldPerson = {};
+  for (const p in held) {
+    heldPerson[p] = Object.values(held[p]).reduce((s, v) => s + Math.max(0, v), 0);
+    if (active.has(p)) for (const a in held[p]) if (held[p][a] > 0) nbHolders[a] = (nbHolders[a] || 0) + 1;
+  }
+  return CACHE = { held, heldArt, heldPerson, heldTotal, lastEntree, nbHolders };
+}
+const heldOf = (p, a) => ((calc().held[p] || {})[a]) || 0;
+function stateValid(){
+  const c = calc();
+  for (const p in c.held) for (const a in c.held[p]) if (c.held[p][a] < 0) return false;
+  return true;
+}
+
+/* ---------- Persistance ---------- */
+const TYPES = { entree:{ l:'Entrée', c:'blue' }, sortie:{ l:'Sortie', c:'' }, archivage:{ l:'Archivage (suppression)', c:'bad' }, restauration:{ l:'Restauration', c:'ok' }, suppression:{ l:'Suppression définitive', c:'bad' } };
+const sortedMvts = () => DB.mouvements.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0));
+function cacheLocal(){ LS.set('inventaire_cache', JSON.stringify(DB)); }
+function commit(){
+  CACHE = null; DB.updatedAt = Date.now(); dirty = true; saveState = 'pending';
+  cacheLocal(); render(); setStatus(); clearTimeout(saveT); saveT = setTimeout(saveNow, 400);
+}
+async function saveNow(){
+  clearTimeout(saveT);
+  if (saving) { resave = true; return; }
+  saving = true; let remote = false;
+  try {
+    if (mode === 'file' && fileHandle) {
+      const f = await fileHandle.getFile();
+      if (f.lastModified !== lastMod) {
+        const txt = await f.text();
+        if (txt.trim()) { const b = sig(); DB = mergeDB(DB, normalizeDB(JSON.parse(txt))); CACHE = null; if (sig() !== b) remote = true; }
+      }
+      DB.updatedAt = Date.now();
+      const w = await fileHandle.createWritable();
+      await w.write(JSON.stringify(DB)); await w.close();
+      lastMod = (await fileHandle.getFile()).lastModified;
+    }
+    cacheLocal(); dirty = false; lastSaved = new Date(); saveState = 'ok'; saveErr = '';
+  } catch (e) { saveState = 'err'; saveErr = e && e.message ? e.message : String(e); }
+  saving = false;
+  if (resave) { resave = false; saveNow(); }
+  if (remote && !modalOpen()) render();
+  setStatus();
+}
+async function refreshFromFile(){
+  if (mode !== 'file' || !fileHandle || dirty || saving || modalOpen() || document.hidden) return;
+  try {
+    const f = await fileHandle.getFile();
+    if (f.lastModified === lastMod) return;
+    lastMod = f.lastModified;
+    const txt = await f.text(); if (!txt.trim()) return;
+    const b = sig(); DB = mergeDB(DB, normalizeDB(JSON.parse(txt))); CACHE = null; cacheLocal();
+    if (sig() !== b) { render(); toast('Données mises à jour par un autre poste'); }
+    setStatus();
+  } catch {}
+}
+const FTYPES = [{ description:'Base Inventaire (.json)', accept:{ 'application/json':['.json'] } }];
+async function idb(op, key, val){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('inventaire', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => {
+      try {
+        const tx = r.result.transaction('kv', op === 'set' ? 'readwrite' : 'readonly');
+        const st = tx.objectStore('kv'); const q = op === 'set' ? st.put(val, key) : st.get(key);
+        q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+      } catch (e) { rej(e); }
+    };
+  });
+}
+async function useHandle(h, { create = false } = {}){
+  fileHandle = h; mode = 'file'; needPerm = false; pendingHandle = null;
+  try { await idb('set', 'handle', h); } catch {}
+  const f = await h.getFile(); lastMod = f.lastModified;
+  const txt = await f.text();
+  if (txt.trim() && !create) { DB = normalizeDB(JSON.parse(txt)); CACHE = null; dirty = false; cacheLocal(); }
+  else { dirty = true; }
+  LS.set('inventaire_local_ok', '1');
+  if (dirty) await saveNow();
+  setStatus(); render();
+}
+async function openFile(){
+  try {
+    const [h] = await showOpenFilePicker({ types:FTYPES, multiple:false });
+    await h.requestPermission({ mode:'readwrite' });
+    await useHandle(h); closeAllModals(); toast('Base partagée ouverte : ' + h.name); ensureUser();
+  } catch (e) { if (e.name !== 'AbortError') alertBox('Ouverture impossible : ' + e.message); }
+}
+async function createFile(){
+  try {
+    const h = await showSaveFilePicker({ suggestedName:'inventaire_donnees.json', types:FTYPES });
+    await useHandle(h, { create:true }); closeAllModals(); toast('Nouvelle base créée : ' + h.name); ensureUser();
+  } catch (e) { if (e.name !== 'AbortError') alertBox('Création impossible : ' + e.message); }
+}
+async function reconnect(){
+  if (!pendingHandle) return openFile();
+  try {
+    const p = await pendingHandle.requestPermission({ mode:'readwrite' });
+    if (p === 'granted') { await useHandle(pendingHandle); toast('Base partagée reconnectée'); }
+  } catch (e) { alertBox('Reconnexion impossible : ' + e.message); }
+}
+function setStatus(){
+  const dot = $('#status .dot'), t = $('#status-t'); let cls = '', txt = '';
+  if (needPerm) { cls = 'warn'; txt = 'Reconnecter la base partagée'; }
+  else if (mode === 'file') {
+    if (saveState === 'err') { cls = 'bad'; txt = 'Erreur d’enregistrement'; }
+    else if (dirty) { cls = 'warn'; txt = 'Enregistrement…'; }
+    else { cls = 'ok'; txt = 'Base partagée' + (lastSaved ? ' · ' + lastSaved.toTimeString().slice(0,5) : ''); }
+  } else { cls = 'warn'; txt = 'Local (ce navigateur)'; }
+  dot.className = 'dot ' + cls; t.textContent = txt;
+  setAdminStatus();
+}
+function setAdminStatus(){
+  const dot = $('#admin-dot'), t = $('#admin-t'); if (!dot || !t) return;
+  dot.className = 'dot' + (LEVEL_DOT[userLevel] ? ' ' + LEVEL_DOT[userLevel] : '');
+  t.textContent = LEVEL_LABEL[userLevel];
+  const btn = $('#admin-btn'); if (btn) btn.title = 'Niveau actuel : ' + LEVEL_LABEL[userLevel];
+  Object.keys(LEVELS).forEach(lvl => {
+    const b = $('[data-lvl="' + lvl + '"]'), d = $('#lvl-dot-' + lvl);
+    if (b) b.classList.toggle('on', lvl === userLevel);
+    if (d) d.className = 'dot' + (LEVEL_DOT[lvl] ? ' ' + LEVEL_DOT[lvl] : '');
+  });
+}
+function hideAdminMenu(){ const m = $('#admin-menu'); if (m) m.hidden = true; }
+window.addEventListener('beforeunload', e => { if (dirty && mode === 'file') { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- Interface : utilitaires ---------- */
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+const modalOpen = () => !!document.querySelector('.overlay');
+function closeAllModals(){ document.querySelectorAll('.overlay').forEach(o => o.remove()); }
+function modal(title, body, { submit = 'Valider', onSubmit, wide = false, onOpen } = {}){
+  const wrap = document.createElement('div'); wrap.className = 'overlay';
+  wrap.innerHTML = `<form class="modal${wide ? ' wide' : ''}" autocomplete="off">
+    <div class="mh"><h3>${esc(title)}</h3><button type="button" class="x" data-act="closeModal" aria-label="Fermer">×</button></div>
+    <div class="mb">${body}<div class="err" hidden></div></div>
+    <div class="mf">${onSubmit
+      ? `<button type="button" class="btn" data-act="closeModal">Annuler</button><button class="btn primary">${esc(submit)}</button>`
+      : `<button type="button" class="btn" data-act="closeModal">Fermer</button>`}</div></form>`;
+  document.body.appendChild(wrap);
+  const form = wrap.firstElementChild;
+  form.addEventListener('submit', e => {
+    e.preventDefault(); if (!onSubmit) return;
+    const r = onSubmit(Object.fromEntries(new FormData(form)), form);
+    if (r === undefined || r === true) wrap.remove();
+    else { const er = $('.err', form); er.textContent = r; er.hidden = false; }
+  });
+  if (onOpen) onOpen(form);
+  const f = $('[autofocus]', form) || $('input:not([type=hidden]),select,textarea', form); if (f) f.focus();
+  return wrap;
+}
+function alertBox(msg){ modal('Information', `<p>${esc(msg)}</p>`); }
+function confirmBox(msg, onOk, label = 'Confirmer'){ modal('Confirmation', `<p>${esc(msg)}</p>`, { submit:label, onSubmit:() => { onOk(); return true; } }); }
+function requireLevel(minLevel, action){
+  if (levelAtLeast(minLevel)) return action();
+  modal('Accès protégé', `
+    <p class="muted">Cette action nécessite le mode ${LEVEL_LABEL[minLevel]} (ou supérieur). Saisissez le mot de passe correspondant.</p>
+    <div class="grid2"><label class="full">Mot de passe<input name="pwd" type="password" autofocus></label></div>
+  `, { submit:'Déverrouiller', onSubmit(fd){
+    const v = (fd.pwd || '').trim();
+    const lvl = v === ADMIN_PWD ? 'admin' : null;
+    if (!lvl) return 'Mot de passe incorrect.';
+    if (LEVELS[lvl] < LEVELS[minLevel]) return `Ce mot de passe ne donne pas accès au mode ${LEVEL_LABEL[minLevel]}.`;
+    userLevel = lvl; setAdminStatus(); render(); toast('Mode ' + LEVEL_LABEL[lvl] + ' activé');
+    action();
+    return true;
+  } });
+}
+const opts = (list, val, lab, sel, extra) => list.map(x => `<option value="${esc(val(x))}"${String(val(x)) === String(sel) ? ' selected' : ''}${extra && extra(x) ? ' ' + extra(x) : ''}>${esc(lab(x))}</option>`).join('');
+/* Ajout d'un nouveau secteur (bâtiment) à la volée, depuis n'importe quel formulaire qui en propose le
+   choix (fiche individuelle, référence, import groupé). onAdded(code, label) reçoit le code généré et
+   met à jour le formulaire d'origine (ajout d'une case à cocher ou d'une option de liste déroulante). */
+function openAddSecteur(onAdded){
+  modal('Nouveau secteur', `<label class="full">Nom du secteur / bâtiment<input name="label" required autofocus placeholder="ex. Quartier Femmes, Bâtiment C…"></label>`, {
+    submit:'Ajouter', onSubmit(fd){
+      const label = fd.label.trim();
+      if (!label) return 'Indiquez un nom.';
+      if (secteursList().some(([, l]) => norm(l) === norm(label))) return 'Ce secteur existe déjà.';
+      const code = addSecteur(label);
+      toast('Secteur « ' + label + ' » ajouté');
+      onAdded(code, label);
+      return true;
+    } });
+}
+const activeArticles = sec => DB.articles.filter(a => !a.archive && (!sec || artSecteurs(a).includes(sec))).sort((a, b) => norm(alabel(a)).localeCompare(norm(alabel(b))));
+/* Options du <select> Référence, limitées au secteur (CDH/CDF) de la fiche concernée. */
+const artOptsHTML = (arts, sel) => '<option value="">— choisir —</option>' + opts(arts, a => a.id, a => a.nom + (a.categorie ? ' (' + a.categorie + ')' : '') + (a.ref ? ' [' + a.ref + ']' : ''), sel);
+const activePersons = () => DB.personnes.filter(p => !p.archive).sort((a, b) => norm(pname(a)).localeCompare(norm(pname(b))));
+const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+/* Couleur stable par catégorie (8 teintes catégorielles, choisies pour rester distinctes en clair/sombre) */
+function catColor(cat){
+  const s = norm(cat) || '~';
+  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return 'var(--cat-' + (h % 8 + 1) + ')';
+}
+
+/* ---------- Mouvements ---------- */
+function addMvt({ type, articleId, personneId, qte, date, destinataire, note, parMat }){
+  /* Nom/prénom/écrou de la fiche et désignation/réf. de l'article figés au moment du mouvement : l'historique
+     reste lisible même si la fiche ou la référence sont ensuite supprimées définitivement. */
+  const p = personneId ? DB.personnes.find(x => x.id === personneId) : null;
+  const a = articleId ? DB.articles.find(x => x.id === articleId) : null;
+  const m = { id:uid(), type, articleId:articleId || null, personneId:personneId || null, qte:+qte || 0, date:date || today(), ts:Date.now(), note:note || '', destinataire:destinataire || '', parMat:parMat || USER_MAT, updatedAt:Date.now(),
+    personNom:p ? p.nom || '' : '', personPrenom:p ? p.prenom || '' : '', personEcrou:p ? p.ecrou || '' : '',
+    articleNom:a ? a.nom || '' : '', articleRef:a ? a.ref || '' : '' };
+  DB.mouvements.push(m); return m;
+}
+
+/* ---------- Formulaires ---------- */
+/* --- Fiches individuelles --- */
+function fPersonne(id){
+  const p = id ? DB.personnes.find(x => x.id === id) : {};
+  modal(id ? 'Modifier la fiche' : 'Nouvelle fiche individuelle', `
+    <div class="grid2">
+      <label>Nom<input name="nom" required autofocus value="${esc(p.nom)}"></label>
+      <label>Prénom<input name="prenom" value="${esc(p.prenom)}"></label>
+      <label>N° d’écrou<input name="ecrou" value="${esc(p.ecrou)}"></label>
+      <label>Secteur<select name="secteur" required>${opts(secteursList(), x => x[0], x => x[1], p.secteur || secteursList()[0][0])}<option value="__new">+ Nouveau secteur…</option></select></label>
+      <label>Bâtiment<input name="batiment" list="dl-bat" value="${esc(p.batiment)}"></label>
+      <label class="full">Notes (remarques…)<textarea name="notes">${esc(p.notes)}</textarea></label>
+    </div><datalist id="dl-bat">${uniq(DB.personnes.map(x => x.batiment)).map(s => `<option value="${esc(s)}">`).join('')}</datalist>`,
+  { onOpen(form){
+      const sel = form.elements.secteur;
+      let prevVal = sel.value;
+      sel.addEventListener('change', () => {
+        if (sel.value !== '__new') { prevVal = sel.value; return; }
+        sel.value = prevVal;
+        openAddSecteur((code, label) => {
+          const opt = document.createElement('option'); opt.value = code; opt.textContent = label;
+          sel.insertBefore(opt, sel.querySelector('option[value="__new"]'));
+          sel.value = code; prevVal = code;
+        });
+      });
+    },
+    onSubmit(fd){
+    const ecr = fd.ecrou.trim();
+    if (ecr && DB.personnes.some(x => x.id !== id && norm(x.ecrou) === norm(ecr))) return 'Ce numéro d’écrou existe déjà.';
+    const v = { nom:fd.nom.trim(), prenom:fd.prenom.trim(), ecrou:ecr, secteur:fd.secteur, batiment:fd.batiment.trim(), notes:fd.notes.trim(), updatedAt:Date.now() };
+    if (id) { Object.assign(p, v); commit(); toast('Fiche mise à jour'); }
+    else { const n = { id:uid(), archive:false, createdAt:Date.now(), ...v }; DB.personnes.push(n); commit(); location.hash = '#/personne/' + n.id; toast('Fiche créée'); }
+    return true;
+  } });
+}
+/* --- Catalogue de référence (Inventaire) --- */
+const categories = () => uniq([...CATEGORIES_DEFAUT, ...DB.articles.map(a => a.categorie)]);
+/* Bloc de cases à cocher « Secteur(s) » réutilisé par le formulaire de référence et l'import groupé :
+   une case « Tous les secteurs » (qui coche/décoche tout et se recale automatiquement) + une case par
+   secteur existant + un bouton pour en créer un nouveau à la volée sans fermer le formulaire en cours. */
+function secteurChecksHTML(curSec){
+  return `<div class="full">
+    <div>Secteur(s)</div>
+    <div class="row-btns sec-wrap" style="margin-top:6px">
+      <label class="chk"><input type="checkbox" class="sec-all"> Tous les secteurs</label>
+      ${secteursList().map(([c, l]) => `<label class="chk"><input type="checkbox" name="secteurs" value="${c}"${curSec.includes(c) ? ' checked' : ''}> ${esc(l)}</label>`).join('')}
+      <button type="button" class="btn sm sec-add">+ Nouveau secteur…</button>
+    </div>
+  </div>`;
+}
+function wireSecteurChecks(form){
+  const wrap = form.querySelector('.sec-wrap'); if (!wrap) return;
+  const all = wrap.querySelector('.sec-all');
+  const boxesOf = () => [...wrap.querySelectorAll('input[name="secteurs"]')];
+  const syncAll = () => { all.checked = boxesOf().length > 0 && boxesOf().every(b => b.checked); };
+  syncAll();
+  all.addEventListener('change', () => boxesOf().forEach(b => { b.checked = all.checked; }));
+  wrap.addEventListener('change', e => { if (e.target !== all && e.target.name === 'secteurs') syncAll(); });
+  wrap.querySelector('.sec-add').addEventListener('click', () => {
+    openAddSecteur((code, label) => {
+      const lab = document.createElement('label'); lab.className = 'chk';
+      lab.innerHTML = `<input type="checkbox" name="secteurs" value="${esc(code)}" checked> ${esc(label)}`;
+      wrap.querySelector('.sec-add').before(lab);
+      syncAll();
+    });
+  });
+}
+function fArticle(id){
+  const a = id ? DB.articles.find(x => x.id === id) : {};
+  /* Secteur(s) pré-cochés : ceux de la référence en modification, ou le filtre actif de la page Références
+     en création (pratique quand on ajoute plusieurs références au même secteur d'affilée), sinon le 1er secteur. */
+  const curSec = id ? artSecteurs(a) : (UI.secteur ? [UI.secteur] : [secteursList()[0][0]]);
+  modal(id ? 'Modifier la référence' : 'Nouvelle référence', `
+    <div class="grid2">
+      <label class="full">Désignation<input name="nom" required autofocus value="${esc(a.nom)}" placeholder="ex. Jeans, Polo, Pull…"></label>
+      ${secteurChecksHTML(curSec)}
+      <label>Catégorie<select name="categorie" ${id ? '' : 'required'}><option value="">${id ? '— aucune —' : '— choisir —'}</option>${opts(categories(), x => x, x => x, a.categorie)}<option value="__new">+ Nouvelle catégorie…</option></select></label>
+      <label class="full">Stock max possible par fiche (0 = illimité)<input name="stockMax" type="number" min="0" step="1" value="${+a.stockMax || 0}"></label>
+      <label class="full" id="cat-new" hidden>Nom de la nouvelle catégorie<input name="categorieNew" placeholder="ex. Protection, Bureautique…"></label>
+    </div>`,
+  { onOpen(form){
+      const sel = form.elements.categorie, box = $('#cat-new', form), inp = form.elements.categorieNew;
+      sel.addEventListener('change', () => { const n = sel.value === '__new'; box.hidden = !n; inp.required = n; if (n) inp.focus(); });
+      wireSecteurChecks(form);
+    },
+    onSubmit(fd, form){
+    const nom = fd.nom.trim();
+    const secteurs = [...form.querySelectorAll('input[name="secteurs"]:checked')].map(b => b.value);
+    const cat = fd.categorie === '__new' ? (fd.categorieNew || '').trim() : fd.categorie;
+    if (fd.categorie === '__new' && !cat) return 'Indiquez le nom de la nouvelle catégorie.';
+    if (!secteurs.length) return 'Choisissez au moins un secteur.';
+    /* Les secteurs (CDH / CDF) partagent plusieurs désignations identiques (Oreiller, Réveil…) : l'unicité
+       de la désignation s'apprécie donc entre références qui partagent au moins un secteur commun. */
+    if (DB.articles.some(x => x.id !== id && artSecteurs(x).some(s => secteurs.includes(s)) && norm(x.nom) === norm(nom))) return 'Cette référence existe déjà dans ce secteur.';
+    const v = { nom, categorie:cat, secteurs, stockMax:Math.max(0, parseInt(fd.stockMax) || 0), updatedAt:Date.now() };
+    if (id) { Object.assign(a, v); commit(); toast('Référence mise à jour'); }
+    else { DB.articles.push({ id:uid(), archive:false, createdAt:Date.now(), ...v }); commit(); toast('Référence créée'); }
+    return true;
+  } });
+}
+/* Matricule de l'agent qui effectue l'opération (mémorisé sur ce poste, modifiable à chaque saisie) */
+function opFieldHTML(){
+  return `<label class="full">Matricule de l’agent qui effectue l’opération<input name="opMat" required value="${esc(USER_MAT)}" placeholder="ex. A1023"></label>`;
+}
+function wireOp(form){}
+function saveOp(mat){ USER_MAT = mat.trim(); LS.set('inventaire_matricule', USER_MAT); }
+/* Stock max bloquant : nombre max d'une référence par fiche (0 / vide = illimité) */
+function maxMsg(nom, max, cur, q){
+  if (!(max > 0) || cur + q <= max) return '';
+  return `Stock max atteint : « ${nom} » est limité à ${max} par fiche (déjà ${cur}). Entrée de ${q} refusée` + (max - cur > 0 ? ` — maximum autorisé : ${max - cur}.` : '.');
+}
+/* Entrée : la référence est remise à la fiche (augmente son stock réel, plafonné par le stock max) */
+function fEntree(pid, aid){
+  const persons = activePersons();
+  const p = pid ? DB.personnes.find(x => x.id === pid) : null;
+  const arts = activeArticles(p ? (p.secteur || 'cdh') : null);
+  modal('Entrée (remise d’une référence)', `
+    <div class="grid2">
+      <label class="full">Fiche individuelle${p ? `<div class="static">${esc(pname(p))}</div><input type="hidden" name="personneId" value="${esc(p.id)}">`
+        : `<select name="personneId" required autofocus><option value="">— choisir —</option>${opts(persons, x => x.id, pname, '')}</select>`}</label>
+      <label class="full">Référence<select name="articleId" required ${p ? 'autofocus' : ''}>${artOptsHTML(arts, aid)}</select><div class="hint" id="h-max"></div></label>
+      <label>Quantité<input name="qte" type="number" min="1" step="1" value="1" required></label>
+      <label>Date<input name="date" type="date" value="${today()}" required></label>
+      ${opFieldHTML()}
+      <label class="full">Note (facultatif)<input name="note"></label>
+    </div>`,
+  { submit:'Valider l’entrée', onOpen(form){
+      wireOp(form);
+      const aSel = form.elements.articleId, pSel = form.elements.personneId, h = $('#h-max', form);
+      const upd = () => {
+        const a = DB.articles.find(x => x.id === aSel.value), pe = pSel.value;
+        if (!a) { h.textContent = ''; h.className = 'hint'; return; }
+        if (!(+a.stockMax > 0)) { h.textContent = 'Pas de maximum défini pour cette référence.'; h.className = 'hint'; return; }
+        const cur = pe ? heldOf(pe, a.id) : 0, left = a.stockMax - cur;
+        h.textContent = 'Stock max : ' + a.stockMax + (pe ? ' — déjà ' + cur + (left > 0 ? ', reste ' + left : ', maximum atteint') : '');
+        h.className = 'hint' + (pe && left <= 0 ? ' bad' : '');
+      };
+      /* Sans fiche pré-choisie : la liste des références proposées se recalcule sur le secteur (CDH/CDF)
+         de la fiche sélectionnée, pour ne jamais proposer le catalogue de l'autre secteur. */
+      const onPersonChange = () => {
+        if (!p) { const pe = DB.personnes.find(x => x.id === pSel.value); aSel.innerHTML = artOptsHTML(activeArticles(pe ? (pe.secteur || 'cdh') : null), ''); }
+        upd();
+      };
+      aSel.addEventListener('change', upd); if (pSel.tagName === 'SELECT') pSel.addEventListener('change', onPersonChange); upd();
+    },
+    onSubmit(fd){
+    const q = parseInt(fd.qte), mat = (fd.opMat || '').trim();
+    if (!fd.personneId) return 'Choisissez une fiche individuelle.';
+    if (!fd.articleId) return 'Choisissez une référence.';
+    if (!(q > 0)) return 'Quantité invalide.';
+    if (!mat) return 'Indiquez le matricule de l’agent qui effectue l’opération.';
+    const art = DB.articles.find(x => x.id === fd.articleId);
+    const er = maxMsg(art.nom, +art.stockMax || 0, heldOf(fd.personneId, art.id), q);
+    if (er) return er;
+    saveOp(mat);
+    addMvt({ type:'entree', articleId:art.id, personneId:fd.personneId, qte:q, date:fd.date, note:fd.note.trim(), parMat:mat });
+    commit(); toast('Entrée enregistrée'); return true;
+  } });
+}
+/* Sortie : la référence quitte la fiche (diminue son stock réel, plafonné par ce qu'elle détient) */
+function fSortie(pid, aid){
+  const persons = activePersons();
+  const p = pid ? DB.personnes.find(x => x.id === pid) : null;
+  const arts = activeArticles(p ? (p.secteur || 'cdh') : null);
+  modal('Sortie (retrait d’une référence)', `
+    <div class="grid2">
+      <label class="full">Fiche individuelle${p ? `<div class="static">${esc(pname(p))}</div><input type="hidden" name="personneId" value="${esc(p.id)}">`
+        : `<select name="personneId" required autofocus><option value="">— choisir —</option>${opts(persons, x => x.id, pname, '')}</select>`}</label>
+      <label class="full">Référence<select name="articleId" required ${p ? 'autofocus' : ''}>${artOptsHTML(arts, aid)}</select><div class="hint" id="h-held"></div></label>
+      <label>Quantité<input name="qte" type="number" min="1" step="1" value="1" required></label>
+      <label>Date<input name="date" type="date" value="${today()}" required></label>
+      <label class="full">Destinataire<input name="destinataire" required placeholder="ex. rendu au service, transféré à…"></label>
+      ${opFieldHTML()}
+      <label class="full">Note (facultatif)<input name="note"></label>
+    </div>`,
+  { submit:'Valider la sortie', onOpen(form){
+      wireOp(form);
+      const aSel = form.elements.articleId, pSel = form.elements.personneId, h = $('#h-held', form);
+      const upd = () => {
+        const a = DB.articles.find(x => x.id === aSel.value), pe = pSel.value;
+        if (!a || !pe) { h.textContent = ''; h.className = 'hint'; return; }
+        const cur = heldOf(pe, a.id);
+        h.textContent = 'Actuellement détenu : ' + cur;
+        h.className = 'hint' + (cur <= 0 ? ' bad' : '');
+      };
+      const onPersonChange = () => {
+        if (!p) { const pe = DB.personnes.find(x => x.id === pSel.value); aSel.innerHTML = artOptsHTML(activeArticles(pe ? (pe.secteur || 'cdh') : null), ''); }
+        upd();
+      };
+      aSel.addEventListener('change', upd); if (pSel.tagName === 'SELECT') pSel.addEventListener('change', onPersonChange); upd();
+    },
+    onSubmit(fd){
+    const q = parseInt(fd.qte), mat = (fd.opMat || '').trim(), dest = (fd.destinataire || '').trim();
+    if (!fd.personneId) return 'Choisissez une fiche individuelle.';
+    if (!fd.articleId) return 'Choisissez une référence.';
+    if (!(q > 0)) return 'Quantité invalide.';
+    if (!dest) return 'Indiquez le destinataire.';
+    if (!mat) return 'Indiquez le matricule de l’agent qui effectue l’opération.';
+    const cur = heldOf(fd.personneId, fd.articleId);
+    if (q > cur) return 'Quantité invalide : cette fiche ne détient que ' + cur + ' de cette référence.';
+    saveOp(mat);
+    addMvt({ type:'sortie', articleId:fd.articleId, personneId:fd.personneId, qte:q, date:fd.date, destinataire:dest, note:fd.note.trim(), parMat:mat });
+    commit(); toast('Sortie enregistrée'); return true;
+  } });
+}
+function fAnnuler(id){
+  const m = DB.mouvements.find(x => x.id === id); if (!m) return;
+  confirmBox('Annuler ce mouvement ? Il restera visible dans l’historique (barré) mais ne comptera plus dans le stock.', () => {
+    m.annule = true; m.updatedAt = Date.now(); CACHE = null;
+    if (!stateValid()) { m.annule = false; CACHE = null; alertBox('Annulation impossible : un stock deviendrait négatif. Annulez d’abord les mouvements qui en dépendent.'); return; }
+    commit(); toast('Mouvement annulé');
+  }, 'Annuler le mouvement');
+}
+/* Suppression définitive d'une ligne de l'historique (mode Administrateur) : contrairement à "Annuler",
+   la ligne disparaît complètement du journal et ne peut plus être restaurée. */
+function deleteMvt(id){
+  const m = DB.mouvements.find(x => x.id === id); if (!m) return;
+  confirmBox('Supprimer définitivement cette ligne de l’historique ? Contrairement à « Annuler », elle disparaîtra complètement du journal — cette action est irréversible.', () => {
+    const idx = DB.mouvements.indexOf(m);
+    DB.mouvements.splice(idx, 1); CACHE = null;
+    if (!stateValid()) { DB.mouvements.splice(idx, 0, m); CACHE = null; alertBox('Suppression impossible : un stock deviendrait négatif. Supprimez d’abord les mouvements qui en dépendent.'); return; }
+    if (UI.mvtSel === id) UI.mvtSel = null;
+    commit(); toast('Ligne supprimée définitivement');
+  }, 'Supprimer définitivement');
+}
+function toggleArchive(kind, id){
+  const list = kind === 'p' ? DB.personnes : DB.articles, x = list.find(y => y.id === id); if (!x) return;
+  const doIt = () => {
+    if (kind === 'p' && !x.archive) {
+      /* Archivage d'une fiche : toutes ses références sont sorties (mouvement d'archivage, visible comme une suppression) */
+      for (const [aid, qte] of Object.entries(calc().held[id] || {})) {
+        if (qte > 0) addMvt({ type:'archivage', articleId:aid, personneId:id, qte, note:'Sortie automatique — archivage de la fiche' });
+      }
+    } else if (kind === 'p' && x.archive) {
+      addMvt({ type:'restauration', personneId:id, qte:0, note:'Restauration de la fiche' });
+    }
+    x.archive = !x.archive; x.updatedAt = Date.now(); commit(); toast(x.archive ? 'Archivé' : 'Restauré');
+  };
+  if (x.archive) return doIt();
+  const held = kind === 'p' ? (calc().heldPerson[id] || 0) : (calc().heldArt[id] || 0);
+  const msg = kind === 'p'
+    ? (held ? `${pname(x)} détient encore ${held} unité(s) : elles seront sorties (archivage). Archiver quand même ?` : `Archiver ${pname(x)} ?`)
+    : (held ? `${x.nom} : ${held} unité(s) encore distribuée(s). Archiver quand même ?` : `Archiver ${x.nom} ?`);
+  confirmBox(msg, doIt, 'Archiver');
+}
+/* Suppression définitive d'une fiche : si elle n'est pas encore archivée, ses références détenues sont sorties
+   (archivage) au préalable. Son historique de mouvements est conservé (fiche marquée « supprimée » dans le suivi). */
+function deletePersonne(id){
+  const p = DB.personnes.find(x => x.id === id); if (!p) return;
+  const held = calc().heldPerson[id] || 0;
+  const msg = `Supprimer définitivement la fiche de ${pname(p)} ?` + (held ? ` ${held} unité(s) encore détenue(s) seront sorties (archivage) au préalable.` : '')
+    + ' Son historique de mouvements sera conservé dans le suivi. Cette action est irréversible.';
+  confirmBox(msg, () => {
+    if (!p.archive) {
+      for (const [aid, qte] of Object.entries(calc().held[id] || {})) {
+        if (qte > 0) addMvt({ type:'archivage', articleId:aid, personneId:id, qte, note:'Sortie automatique — suppression de la fiche' });
+      }
+    }
+    addMvt({ type:'suppression', qte:0, note:`Suppression définitive de la fiche de ${pname(p)}${p.ecrou ? ' (écrou ' + p.ecrou + ')' : ''}` });
+    DB.personnes = DB.personnes.filter(x => x.id !== id);
+    commit(); toast('Fiche supprimée');
+    if (route().name === 'personne' && route().id === id) location.hash = '#/personnes'; else render();
+  }, 'Supprimer');
+}
+/* Suppression définitive d'une référence archivée : son historique de mouvements est conservé */
+function deleteArticle(id){
+  const a = DB.articles.find(x => x.id === id); if (!a || !a.archive) return;
+  confirmBox(`Supprimer définitivement la référence ${a.nom} ? Son historique de mouvements sera conservé dans le suivi. Cette action est irréversible.`, () => {
+    addMvt({ type:'suppression', qte:0, note:`Suppression définitive de la référence ${a.nom}${a.ref ? ' (' + a.ref + ')' : ''}` });
+    DB.articles = DB.articles.filter(x => x.id !== id);
+    commit(); toast('Référence supprimée');
+  }, 'Supprimer');
+}
+function openArticle(id){
+  const a = DB.articles.find(x => x.id === id); if (!a) return;
+  const c = calc();
+  const holders = DB.personnes.filter(p => !p.archive).map(p => ({ p, q:heldOf(p.id, id) })).filter(x => x.q > 0).sort((x, y) => norm(pname(x.p)).localeCompare(norm(pname(y.p))));
+  const hist = sortedMvts().filter(m => m.articleId === id).slice(0, 8);
+  modal(alabel(a), `
+    <div class="row-btns">${a.ref ? `<span class="b">Réf. ${esc(a.ref)}</span>` : ''}${a.categorie ? `<span class="b">${esc(a.categorie)}</span>` : ''}${a.archive ? '<span class="b bad">Archivé</span>' : ''}${+a.stockMax > 0 ? `<span class="b warn">Stock max : ${a.stockMax} par fiche</span>` : ''}
+      <span class="b blue">${c.heldArt[id] || 0} distribué(s) sur ${c.nbHolders[id] || 0} fiche(s)</span></div>
+    <div class="row-btns">
+      <button type="button" class="btn primary" data-act="entree" data-aid="${esc(id)}">Entrée sur une fiche</button>
+      <button type="button" class="btn" data-act="editArticle" data-id="${esc(id)}">Modifier</button>
+      <button type="button" class="btn danger" data-act="archiveArticle" data-id="${esc(id)}">${a.archive ? 'Restaurer' : 'Archiver'}</button></div>
+    <div class="sect">Fiches concernées (${holders.length})</div>
+    ${holders.length ? `<div class="tw"><table class="tbl"><tbody>${holders.map(h => `<tr>
+      <td><a href="#/personne/${esc(h.p.id)}" data-act="goPersonne" data-id="${esc(h.p.id)}">${esc(pname(h.p))}</a> <span class="muted small">${esc(h.p.ecrou || '')}</span></td>
+      <td class="num">${h.q}</td><td class="right"><button type="button" class="btn sm" data-act="sortie" data-pid="${esc(h.p.id)}" data-aid="${esc(id)}">Sortie</button></td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="muted small">Aucune fiche pour le moment.</div>'}
+    <div class="sect">Derniers mouvements</div>
+    ${hist.length ? `<div class="tw"><table class="tbl"><tbody>${hist.map(m => mvtRow(m, { article:false })).join('')}</tbody></table></div>` : '<div class="muted small">Aucun mouvement.</div>'}`,
+  { wide:true });
+}
+
+/* ---------- Données / sauvegarde ---------- */
+function fData(){
+  const w = modal('Données et sauvegarde', `
+    <div class="sect" style="margin-top:4px">Base partagée</div>
+    ${FSA ? `${mode === 'file' ? '<p class="small muted">Connecté à <b>' + esc(fileHandle.name) + '</b>.</p>' : ''}
+      <div class="row-btns"><button type="button" class="btn primary" data-act="openFile">Ouvrir une base existante…</button>
+      <button type="button" class="btn" data-act="createFile">Créer une nouvelle base…</button>
+      ${mode === 'file' ? '<button type="button" class="btn" data-act="saveNow">Enregistrer / actualiser</button>' : ''}</div>
+      ${saveState === 'err' ? `<div class="err">Dernier enregistrement en échec : ${esc(saveErr)}</div>` : ''}`
+    : ''}
+    <div class="sect">Export / sauvegarde</div>
+    <div class="row-btns"><button type="button" class="btn" data-act="exportXlsx" data-scope="all">Exporter en Excel (.xlsx)</button>
+      <button type="button" class="btn" data-act="exportJson">Sauvegarde JSON</button>
+      <button type="button" class="btn" data-act="importJson">Importer une sauvegarde (fusion)…</button></div>
+    <div class="sect">Utilisateur</div>
+    <div class="grid2"><label class="full">Votre matricule (proposé à chaque opération)<input id="u-mat" value="${esc(USER_MAT)}"></label></div>`,
+  { wide:true });
+  $('#u-mat', w).addEventListener('change', e => { saveOp(e.target.value); toast('Matricule enregistré'); });
+}
+function ensureUser(){ if (!USER_MAT && !document.querySelector('.overlay')) askUser(); }
+function askUser(){
+  modal('Bienvenue', `<div class="grid2"><label class="full">Votre matricule<input name="m" autofocus required value="${esc(USER_MAT)}" placeholder="ex. A1023"></label></div>
+`,
+    { submit:'Continuer', onSubmit(fd){ saveOp(fd.m); return true; } });
+}
+function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+function exportJson(){ download(new Blob([JSON.stringify(DB, null, 1)], { type:'application/json' }), 'inventaire_sauvegarde_' + today() + '.json'); }
+
+/* --- Export .xlsx (zip "stored" minimal, sans bibliothèque) --- */
+const CRCT = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = -1; for (let i = 0; i < b.length; i++) c = CRCT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; }
+function zipBlob(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const f of files) {
+    const nm = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data), sz = data.length;
+    const l = new DataView(new ArrayBuffer(30));
+    l.setUint32(0, 0x04034b50, true); l.setUint16(4, 20, true); l.setUint16(6, 0x0800, true); l.setUint16(12, 0x21, true);
+    l.setUint32(14, crc, true); l.setUint32(18, sz, true); l.setUint32(22, sz, true); l.setUint16(26, nm.length, true);
+    parts.push(new Uint8Array(l.buffer), nm, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + sz;
+  }
+  const cd = central.reduce((s, x) => s + x.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cd, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+const xe = s => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function colName(i){ let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function sheetXml(rows){
+  const nc = Math.max(...rows.map(r => r.length)), w = [];
+  for (let c = 0; c < nc; c++) w.push(Math.min(50, Math.max(8, ...rows.map(r => String(r[c] ?? '').length + 2))));
+  const data = rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => {
+    if (v === null || v === undefined || v === '') return '';
+    const ref = colName(ci) + (ri + 1);
+    if (typeof v === 'number') return `<c r="${ref}"><v>${v}</v></c>`;
+    return `<c r="${ref}" t="inlineStr"${ri === 0 ? ' s="1"' : ''}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
+  }).join('') + '</row>').join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${w.map((x, i) => `<col min="${i + 1}" max="${i + 1}" width="${x}" customWidth="1"/>`).join('')}</cols><sheetData>${data}</sheetData><autoFilter ref="A1:${colName(nc - 1)}${rows.length}"/></worksheet>`;
+}
+function xlsxBlob(sheets){
+  const NS = 'http://schemas.openxmlformats.org/';
+  const files = [
+    { name:'[Content_Types].xml', text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${NS}package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>` },
+    { name:'_rels/.rels', text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${NS}package/2006/relationships"><Relationship Id="rId1" Type="${NS}officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name:'xl/workbook.xml', text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="${NS}spreadsheetml/2006/main" xmlns:r="${NS}officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${xe(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>` },
+    { name:'xl/_rels/workbook.xml.rels', text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${NS}package/2006/relationships">${sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="${NS}officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="${NS}officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name:'xl/styles.xml', text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${NS}spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDDE7F0"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>` },
+    ...sheets.map((s, i) => ({ name:`xl/worksheets/sheet${i + 1}.xml`, text:sheetXml(s.rows) }))
+  ];
+  return zipBlob(files);
+}
+function exportXlsx(d){
+  const scope = (d && d.scope) || 'all';
+  const c = calc(), A = id => DB.articles.find(x => x.id === id) || {}, P = id => DB.personnes.find(x => x.id === id) || {};
+  const sheets = [];
+  if (scope === 'all' || scope === 'inventaire') {
+    const refs = [['Secteur', 'Réf.', 'Désignation', 'Catégorie', 'Stock max (par fiche)', 'Distribué (total)', 'Fiches concernées', 'Archivé']];
+    for (const a of DB.articles.slice().sort((x, y) => norm(alabel(x)).localeCompare(norm(alabel(y)))))
+      refs.push([secteursLabel(artSecteurs(a)), a.ref || '', a.nom, a.categorie || '', +a.stockMax || 0, c.heldArt[a.id] || 0, c.nbHolders[a.id] || 0, a.archive ? 'oui' : '']);
+    sheets.push({ name:'Inventaire', rows:refs });
+  }
+  if (scope === 'all' || scope === 'personnes') {
+    const pers = [['Nom', 'Prénom', 'N° d’écrou', 'Secteur', 'Bâtiment', 'Unités détenues', 'Détention par catégorie', 'Notes', 'Archivé']];
+    const det = [['Nom', 'Prénom', 'N° d’écrou', 'Catégorie', 'Réf.', 'Référence', 'Quantité', 'Dernière entrée']];
+    for (const p of DB.personnes.slice().sort((x, y) => norm(pname(x)).localeCompare(norm(pname(y))))) {
+      const items = Object.entries(c.held[p.id] || {}).filter(([, q]) => q > 0);
+      pers.push([p.nom, p.prenom || '', p.ecrou || '', secteurLabel(p.secteur), p.batiment || '', c.heldPerson[p.id] || 0, catText(items.map(([aid, q]) => ({ a:A(aid), n:q })).filter(x => x.a.id)).replace(/, /g, ' ; '), p.notes || '', p.archive ? 'oui' : '']);
+      for (const [aid, q] of items) det.push([p.nom, p.prenom || '', p.ecrou || '', A(aid).categorie || '', A(aid).ref || '', A(aid).nom || '', q, fmtDate(c.lastEntree[p.id + '|' + aid])]);
+    }
+    sheets.push({ name:'Fiches individuelles', rows:pers }, { name:'Attribution', rows:det });
+  }
+  if (scope === 'all' || scope === 'mouvements') {
+    const mv = [['Date', 'Type', 'Réf.', 'Référence', 'Nom', 'Prénom', 'N° d’écrou', 'Quantité', 'Destinataire', 'Note', 'Matricule agent', 'Annulé']];
+    for (const m of sortedMvts()) mv.push([fmtDate(m.date), TYPES[m.type]?.l || m.type, A(m.articleId).ref || m.articleRef || '', A(m.articleId).nom || m.articleNom || '', P(m.personneId).nom || m.personNom || '', P(m.personneId).prenom || m.personPrenom || '', P(m.personneId).ecrou || m.personEcrou || '', +m.qte, m.destinataire || '', m.note || '', m.parMat || '', m.annule ? 'oui' : '']);
+    sheets.push({ name:'Mouvements', rows:mv });
+  }
+  /* Export d'une fiche individuelle (bouton "Exporter en Excel" sur la page de la fiche) : inventaire
+     complet de son secteur (CDH/CDF) + son propre historique de mouvements, en 2 feuilles. */
+  let fp = null;
+  if (scope === 'fiche') {
+    fp = P(d.id);
+    if (!fp.id) { toast('Fiche introuvable'); return; }
+    const sec = fp.secteur || 'cdh';
+    const inv = [['Désignation', 'Catégorie', 'Réf.', 'Stock réel', 'Stock max', 'Statut', 'Dernière entrée']];
+    for (const a of DB.articles.filter(a => !a.archive && artSecteurs(a).includes(sec))
+        .sort((x, y) => norm(x.categorie || '~').localeCompare(norm(y.categorie || '~')) || norm(alabel(x)).localeCompare(norm(alabel(y))))) {
+      const q = heldOf(fp.id, a.id), atMax = +a.stockMax > 0 && q >= +a.stockMax;
+      inv.push([a.nom, a.categorie || '', a.ref || '', q, +a.stockMax > 0 ? a.stockMax : '', atMax ? 'Max' : '', fmtDate(c.lastEntree[fp.id + '|' + a.id])]);
+    }
+    const hist = [['Date', 'Type', 'Référence', 'Quantité', 'Destinataire', 'Note', 'Matricule agent', 'Annulé']];
+    for (const m of sortedMvts().filter(m => m.personneId === fp.id))
+      hist.push([fmtDate(m.date), TYPES[m.type]?.l || m.type, A(m.articleId).nom || m.articleNom || '', +m.qte, m.destinataire || '', m.note || '', m.parMat || '', m.annule ? 'oui' : '']);
+    sheets.push({ name:'Inventaire', rows:inv }, { name:'Historique', rows:hist });
+  }
+  const safe = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const fname = scope === 'fiche'
+    ? 'inventaire_fiche_' + [safe(fp.nom), safe(fp.prenom)].filter(Boolean).join('_') + '_' + today() + '.xlsx'
+    : 'inventaire_' + (scope === 'all' ? '' : scope + '_') + today() + '.xlsx';
+  download(xlsxBlob(sheets), fname);
+  toast('Export Excel généré');
+}
+
+/* --- Import groupé d'une liste de références (bouton "Importer une liste" sur la page Références) ---
+   Permet de créer d'un coup toute une série de références avec leur quantum max, utile par exemple pour
+   initialiser le catalogue d'un nouveau bâtiment. Trois sources possibles : un fichier Excel (.xlsx), un
+   fichier CSV, ou un PDF (extraction de texte "au mieux" — à vérifier/corriger ensuite). Dans tous les cas,
+   le texte obtenu (ou collé directement) est ramené au même format intermédiaire : une référence par ligne,
+   avec son quantum max en fin de ligne, avant un aperçu modifiable qui précède la création effective. */
+async function inflateBytes(bytes, raw){
+  const ds = new DecompressionStream(raw ? 'deflate-raw' : 'deflate');
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function readZipCentralDirectory(bytes){
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65557); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('Fichier ZIP/XLSX invalide (fin de répertoire central introuvable).');
+  const count = dv.getUint16(eocd + 10, true), cdOffset = dv.getUint32(eocd + 16, true);
+  const entries = []; let p = cdOffset;
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true), compSize = dv.getUint32(p + 20, true), uncompSize = dv.getUint32(p + 24, true);
+    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
+    const localOffset = dv.getUint32(p + 42, true);
+    const name = new TextDecoder('utf-8').decode(bytes.subarray(p + 46, p + 46 + nameLen));
+    entries.push({ name, method, compSize, uncompSize, localOffset });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+async function readZipEntry(bytes, entry){
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const lp = entry.localOffset;
+  if (dv.getUint32(lp, true) !== 0x04034b50) throw new Error('Entrée ZIP/XLSX invalide.');
+  const nameLen = dv.getUint16(lp + 26, true), extraLen = dv.getUint16(lp + 28, true);
+  const dataStart = lp + 30 + nameLen + extraLen;
+  const comp = bytes.subarray(dataStart, dataStart + entry.compSize);
+  if (entry.method === 0) return comp.slice();
+  if (entry.method === 8) return await inflateBytes(comp, true);
+  throw new Error('Méthode de compression ZIP non gérée (' + entry.method + ').');
+}
+/* Lit la 1ère feuille d'un classeur .xlsx et renvoie une ligne de texte par ligne de la feuille (cellules
+   non vides concaténées avec ";"), prête à être traitée par linesToItems() comme un texte collé. */
+async function parseXlsxToLines(buf){
+  const bytes = new Uint8Array(buf);
+  const entries = readZipCentralDirectory(bytes);
+  const byName = new Map(entries.map(e => [e.name, e]));
+  const sheetName = [...byName.keys()].filter(n => /^xl\/worksheets\/sheet\d+\.xml$/i.test(n))
+    .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]))[0];
+  if (!sheetName) throw new Error('Aucune feuille trouvée dans le fichier Excel.');
+  const dec = new TextDecoder('utf-8');
+  let shared = [];
+  if (byName.has('xl/sharedStrings.xml')) {
+    const xml = dec.decode(await readZipEntry(bytes, byName.get('xl/sharedStrings.xml')));
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    shared = [...doc.getElementsByTagName('si')].map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join(''));
+  }
+  const sheetXmlText = dec.decode(await readZipEntry(bytes, byName.get(sheetName)));
+  const doc = new DOMParser().parseFromString(sheetXmlText, 'application/xml');
+  const rows = [...doc.getElementsByTagName('row')].map(row => {
+    const cells = [...row.children].map(c => {
+      const type = c.getAttribute('t');
+      if (type === 'inlineStr') { const is = c.getElementsByTagName('t')[0]; return is ? is.textContent : ''; }
+      const v = c.getElementsByTagName('v')[0]; if (!v) return '';
+      if (type === 's') return shared[parseInt(v.textContent, 10)] ?? '';
+      return v.textContent;
+    });
+    return cells.filter(x => x !== '').join(';');
+  });
+  return rows.filter(Boolean);
+}
+/* Extraction "au mieux" du texte d'un PDF : décompresse les flux FlateDecode des objets du PDF et en
+   extrait les chaînes affichées par les opérateurs Tj / TJ. Fonctionne pour des PDF simples (export
+   Word/LibreOffice/impression navigateur) ; pour un PDF plus complexe (polices personnalisées encodées),
+   le résultat peut être partiel ou illisible — d'où la zone de texte modifiable qui suit toujours l'import,
+   où l'on peut aussi coller soi-même le texte copié depuis un lecteur PDF en remplacement. */
+function pdfUnescape(s){
+  return s.replace(/\\([0-7]{1,3}|.)/g, (_, c) => /^[0-7]+$/.test(c) ? String.fromCharCode(parseInt(c, 8) & 0xff) : ({ n:'\n', r:'\r', t:'\t' }[c] || c));
+}
+function extractPdfOperators(content){
+  const lines = []; let cur = '';
+  const re = /\((?:\\.|[^\\()])*\)|\[(?:[^\[\]]|\\.)*\]|Td|TD|T\*/g;
+  let m;
+  while ((m = re.exec(content))) {
+    const tok = m[0];
+    if (tok === 'Td' || tok === 'TD' || tok === 'T*') { if (cur.trim()) lines.push(cur); cur = ''; }
+    else if (tok[0] === '(') cur += pdfUnescape(tok.slice(1, -1));
+    else if (tok[0] === '[') {
+      const partsRe = /\((?:\\.|[^\\()])*\)/g; let pm;
+      while ((pm = partsRe.exec(tok))) cur += pdfUnescape(pm[0].slice(1, -1));
+    }
+  }
+  if (cur.trim()) lines.push(cur);
+  return lines.join('\n');
+}
+async function parsePdfToText(buf){
+  const bytes = new Uint8Array(buf);
+  let bin = ''; const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + CH, bytes.length)));
+  const out = []; const objRe = /\d+\s+\d+\s+obj([\s\S]*?)endobj/g; let m;
+  while ((m = objRe.exec(bin))) {
+    const body = m[1];
+    const sm = body.match(/stream\r?\n([\s\S]*?)\r?\nendstream/);
+    if (!sm) continue;
+    const dict = body.slice(0, sm.index);
+    const isFlate = /\/FlateDecode/.test(dict);
+    const lenM = dict.match(/\/Length\s+(\d+)/);
+    let data = sm[1]; if (lenM) data = data.slice(0, +lenM[1]);
+    const dataBytes = new Uint8Array(data.length);
+    for (let i = 0; i < data.length; i++) dataBytes[i] = data.charCodeAt(i) & 0xff;
+    let raw;
+    try { raw = isFlate ? await inflateBytes(dataBytes, false) : dataBytes; } catch { continue; }
+    let content = ''; for (let i = 0; i < raw.length; i += CH) content += String.fromCharCode.apply(null, raw.subarray(i, Math.min(i + CH, raw.length)));
+    const t = extractPdfOperators(content);
+    if (t.trim()) out.push(t);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+/* Une ligne "Désignation ... Quantum" (séparés par ; , tab ou juste un espace) -> {nom, quantum}.
+   Sans nombre en fin de ligne, quantum = 0 (illimité) et toute la ligne devient la désignation. */
+function parseItemLine(line){
+  let s = String(line || '').trim(); if (!s) return null;
+  let nom, qStr;
+  const sep = s.match(/^(.*?)[;,\t]+\s*(\d+)\s*$/);
+  if (sep) { nom = sep[1].trim(); qStr = sep[2]; }
+  else { const trail = s.match(/^(.*?\S)\s+(\d+)\s*$/); if (trail) { nom = trail[1].trim(); qStr = trail[2]; } else { nom = s.replace(/[;,\t]+$/, '').trim(); qStr = ''; } }
+  nom = nom.replace(/^[-•*•]+\s*/, '').replace(/^\d+[.)]\s+/, '').trim();
+  if (!nom) return null;
+  return { nom, quantum:qStr ? Math.max(0, parseInt(qStr, 10) || 0) : 0 };
+}
+function isHeaderItem(it){
+  const n = norm(it.nom);
+  return it.quantum === 0 && /(designation|^nom$|article|reference|libelle)/.test(n) && /(quantum|quantite|stock|max)/.test(n);
+}
+function linesToItems(text){
+  return String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+    .map(parseItemLine).filter(Boolean).filter(it => !isHeaderItem(it));
+}
+function importPreviewHTML(items){
+  if (!items.length) return '<p class="muted small">Aucune ligne reconnue pour l’instant.</p>';
+  return `<div class="tw"><table class="tbl"><thead><tr><th class="noprint"></th><th>Désignation</th><th class="num">Quantum max</th></tr></thead><tbody>
+    ${items.map((it, i) => `<tr><td class="noprint"><input type="checkbox" class="imp-inc" data-i="${i}" checked></td>
+      <td><input class="imp-nom" data-i="${i}" value="${esc(it.nom)}"></td>
+      <td class="num"><input class="imp-q" data-i="${i}" type="number" min="0" step="1" value="${it.quantum}" style="width:80px;text-align:right"></td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function fImportList(){
+  let items = [];
+  const secList = secteursList();
+  const curSec = UI.secteur ? [UI.secteur] : [secList[0][0]];
+  modal('Importer une liste de références', `
+    <div class="grid2">
+      <label class="full">Fichier (.xlsx, .csv ou .pdf)<input type="file" name="file" accept=".xlsx,.csv,.pdf"></label>
+      ${secteurChecksHTML(curSec)}
+      <div class="full"><div>Aperçu (<span id="imp-count">0</span> ligne(s) reconnue(s))</div><div id="imp-preview" style="margin-top:6px">${importPreviewHTML(items)}</div></div>
+    </div>`,
+  { wide:true, submit:'Importer', onOpen(form){
+      /* Le secteur de destination se choisit exactement comme pour n'importe quelle référence ou fiche
+         (case « Tous les secteurs » + une case par bâtiment + possibilité d'en créer un nouveau). */
+      wireSecteurChecks(form);
+      const file = form.elements.file, prev = $('#imp-preview', form), cnt = $('#imp-count', form);
+      const refresh = text => {
+        items = linesToItems(text);
+        prev.innerHTML = importPreviewHTML(items);
+        cnt.textContent = items.length;
+      };
+      prev.addEventListener('input', e => {
+        const i = +e.target.dataset.i; if (Number.isNaN(i) || !items[i]) return;
+        if (e.target.classList.contains('imp-nom')) items[i].nom = e.target.value;
+        else if (e.target.classList.contains('imp-q')) items[i].quantum = Math.max(0, parseInt(e.target.value, 10) || 0);
+        else if (e.target.classList.contains('imp-inc')) items[i].excluded = !e.target.checked;
+      });
+      file.addEventListener('change', async () => {
+        const f = file.files[0]; if (!f) return;
+        const er = $('.err', form); er.hidden = true;
+        try {
+          const ext = (f.name.split('.').pop() || '').toLowerCase();
+          let text;
+          if (ext === 'xlsx') text = (await parseXlsxToLines(await f.arrayBuffer())).join('\n');
+          else if (ext === 'csv') text = await f.text();
+          else if (ext === 'pdf') text = await parsePdfToText(await f.arrayBuffer());
+          else { er.textContent = 'Format non reconnu : utilisez un fichier .xlsx, .csv ou .pdf.'; er.hidden = false; return; }
+          if (ext === 'pdf' && !text.trim()) { er.textContent = 'Aucun texte n’a pu être extrait de ce PDF — essayez plutôt un fichier Excel ou CSV.'; er.hidden = false; }
+          refresh(text);
+        } catch (e) { er.textContent = 'Échec de la lecture du fichier : ' + e.message; er.hidden = false; }
+      });
+    },
+    onSubmit(fd, form){
+      const secteurs = [...form.querySelectorAll('input[name="secteurs"]:checked')].map(b => b.value);
+      if (!secteurs.length) return 'Choisissez au moins un secteur.';
+      const toCreate = items.filter(it => !it.excluded && it.nom.trim());
+      if (!toCreate.length) return 'Aucune ligne à importer (cochez au moins une ligne de l’aperçu).';
+      let created = 0, skipped = 0;
+      for (const it of toCreate) {
+        const nom = it.nom.trim();
+        if (DB.articles.some(x => artSecteurs(x).some(s => secteurs.includes(s)) && norm(x.nom) === norm(nom))) { skipped++; continue; }
+        DB.articles.push({ id:uid(), ref:'', nom, categorie:'', secteurs:[...secteurs], stockMax:Math.max(0, +it.quantum || 0), archive:false, createdAt:Date.now(), updatedAt:Date.now() });
+        created++;
+      }
+      commit();
+      toast(created + ' référence(s) importée(s)' + (skipped ? ', ' + skipped + ' ignorée(s) (déjà existantes)' : ''));
+      return true;
+    } });
+}
+
+/* Détention résumée par catégorie : [{cat, n}] à partir d'une liste [{a, n}] */
+const NOCAT = 'Sans catégorie';
+function catCounts(items){
+  const m = new Map();
+  for (const x of items) { const k = (x.a.categorie || '').trim() || NOCAT; m.set(k, (m.get(k) || 0) + x.n); }
+  return [...m.entries()].sort((x, y) => (x[0] === NOCAT) - (y[0] === NOCAT) || x[0].localeCompare(y[0], 'fr')).map(([cat, n]) => ({ cat, n }));
+}
+const catText = items => catCounts(items).map(x => x.cat + (x.n > 1 ? ' ×' + x.n : '')).join(', ');
+
+/* ---------- Recherche globale ---------- */
+let SR = [], sSel = 0;
+function searchAll(q){
+  const toks = norm(q).split(/\s+/).filter(Boolean); if (!toks.length) return [];
+  const c = calc(), match = h => toks.every(t => h.includes(t));
+  const A = id => DB.articles.find(x => x.id === id);
+  const people = DB.personnes.map(p => {
+    const items = Object.entries(c.held[p.id] || {}).filter(([, n]) => n > 0).map(([aid, n]) => ({ a:A(aid), n })).filter(x => x.a);
+    const hay = norm([p.nom, p.prenom, p.prenom + ' ' + p.nom, p.nom + ' ' + p.prenom, p.ecrou, p.batiment, secteurLabel(p.secteur), ...items.map(x => x.a.nom + ' ' + (x.a.categorie || ''))].join(' '));
+    return match(hay) ? { k:'p', p, items } : null;
+  }).filter(Boolean).sort((a, b) => (a.p.archive ? 1 : 0) - (b.p.archive ? 1 : 0) || norm(pname(a.p)).localeCompare(norm(pname(b.p)))).slice(0, 8);
+  const arts = DB.articles.filter(a => match(norm([a.ref, a.nom, a.categorie].join(' '))))
+    .sort((a, b) => (a.archive ? 1 : 0) - (b.archive ? 1 : 0) || norm(alabel(a)).localeCompare(norm(alabel(b)))).slice(0, 8).map(a => ({ k:'a', a }));
+  return [...people, ...arts];
+}
+function renderSearch(){
+  const q = $('#q').value, box = $('#sres');
+  if (!q.trim()) { box.hidden = true; SR = []; return; }
+  SR = searchAll(q); if (sSel >= SR.length) sSel = 0;
+  if (!SR.length) { box.innerHTML = '<div class="none">Aucun résultat.</div>'; box.hidden = false; return; }
+  let html = '', last = '';
+  SR.forEach((r, i) => {
+    if (r.k !== last) { html += `<div class="grp">${r.k === 'p' ? 'Fiches individuelles' : 'Références'}</div>`; last = r.k; }
+    if (r.k === 'p') {
+      const p = r.p, sum = catText(r.items);
+      html += `<div class="ri${i === sSel ? ' sel' : ''}" data-act="goPersonne" data-id="${esc(p.id)}"><div><div class="t">${esc(pname(p))} ${p.archive ? '<span class="b bad">archivé</span>' : ''}</div>
+        <div class="s">${esc([p.ecrou, p.batiment].filter(Boolean).join(' · ') || '—')}${sum ? ' — ' + esc(sum) : ''}</div></div>
+        <div class="r"><span class="b blue">${(calc().heldPerson[p.id] || 0)} unité(s)</span></div></div>`;
+    } else {
+      const a = r.a;
+      html += `<div class="ri${i === sSel ? ' sel' : ''}" data-act="openArticle" data-id="${esc(a.id)}"><div><div class="t">${esc(alabel(a))} ${a.archive ? '<span class="b bad">archivé</span>' : ''}</div>
+        <div class="s">${esc([a.ref, a.categorie].filter(Boolean).join(' · ') || '—')}</div></div>
+        <div class="r"><span class="b blue">${calc().heldArt[a.id] || 0} distribué(s)</span></div></div>`;
+    }
+  });
+  box.innerHTML = html; box.hidden = false;
+}
+function hideSearch(){ $('#sres').hidden = true; }
+$('#q').addEventListener('input', () => { sSel = 0; renderSearch(); });
+$('#q').addEventListener('focus', renderSearch);
+$('#q').addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (SR.length) { sSel = (sSel + 1) % SR.length; renderSearch(); $('.ri.sel')?.scrollIntoView({ block:'nearest' }); } }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (SR.length) { sSel = (sSel - 1 + SR.length) % SR.length; renderSearch(); $('.ri.sel')?.scrollIntoView({ block:'nearest' }); } }
+  else if (e.key === 'Enter') { e.preventDefault(); const r = SR[sSel]; if (r) { r.k === 'p' ? ACT.goPersonne({ id:r.p.id }) : ACT.openArticle({ id:r.a.id }); } }
+  else if (e.key === 'Escape') { $('#q').value = ''; hideSearch(); $('#q').blur(); }
+});
+$('#sres').addEventListener('mousedown', e => e.preventDefault());
+document.addEventListener('click', e => { if (!e.target.closest('.swrap')) hideSearch(); });
+document.addEventListener('click', e => { if (!e.target.closest('.admin-wrap')) hideAdminMenu(); });
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && !modalOpen()) { e.preventDefault(); $('#q').focus(); }
+  if (e.key === 'Escape') { const o = [...document.querySelectorAll('.overlay')].pop(); if (o) o.remove(); }
+});
+
+/* ---------- Vues ---------- */
+function mvtRow(m, { person = true, article = true, undo = false } = {}){
+  const a = DB.articles.find(x => x.id === m.articleId), p = DB.personnes.find(x => x.id === m.personneId), T = TYPES[m.type] || { l:m.type, c:'' };
+  const q = (m.type === 'entree' ? '+' : m.type === 'sortie' || m.type === 'archivage' ? '-' : '') + Math.abs(+m.qte || 0);
+  /* Fiche/référence vivante prioritaire ; sinon on retombe sur le nom/écrou/désignation figés au moment du mouvement */
+  const snapName = ((m.personNom || '').toUpperCase() + ' ' + (m.personPrenom || '')).trim();
+  const persCell = p
+    ? `<a href="#/personne/${esc(p.id)}" data-act="goPersonne" data-id="${esc(p.id)}">${esc(pname(p))}</a>`
+    : (snapName ? `${esc(snapName)} <span class="muted small">(fiche supprimée)</span>` : '<span class="muted">—</span>');
+  const ecrouCell = p ? (p.ecrou || '') : (m.personEcrou || '');
+  const artCell = a ? esc(alabel(a)) : (m.articleNom ? `${esc(m.articleNom)} <span class="muted small">(référence supprimée)</span>` : '<span class="muted">—</span>');
+  /* Le bouton "Supprimer" (admin) ne s'affiche que pour la ligne sélectionnée d'un clic (UI.mvtSel),
+     pour ne pas l'exposer en permanence sur chaque ligne de l'historique. */
+  const canDelete = undo && levelAtLeast('admin');
+  const selected = canDelete && UI.mvtSel === m.id;
+  const cls = [m.annule ? 'off' : '', canDelete ? 'click' : '', selected ? 'sel' : ''].filter(Boolean).join(' ');
+  return `<tr${cls ? ` class="${cls}"` : ''}${canDelete ? ` data-act="selectMvt" data-id="${esc(m.id)}"` : ''}><td class="nowrap">${fmtDate(m.date)}</td><td><span class="b ${T.c}">${T.l}</span></td>
+    ${article ? `<td>${artCell}</td>` : ''}
+    ${person ? `<td>${persCell}</td><td class="nowrap">${esc(ecrouCell)}</td>` : ''}
+    <td class="num">${q}</td><td>${esc(m.destinataire || '')}</td><td class="nowrap">${esc(m.parMat || '')}</td><td class="muted small">${esc(m.note || '')}</td>
+    ${undo ? `<td class="right nowrap">${['restauration', 'suppression'].includes(m.type) ? '' : (m.annule ? '<span class="muted small">annulé</span>' : `<button type="button" class="btn sm" data-act="annuler" data-id="${esc(m.id)}">Annuler</button>`)}${selected ? ` <button type="button" class="btn sm danger" data-act="deleteMvt" data-id="${esc(m.id)}">Supprimer</button>` : ''}</td>` : ''}</tr>`;
+}
+function vWelcome(){
+  return `<div class="card welcome"><h2>Bienvenue dans Inventaire</h2>
+    <p class="muted">Choisissez où stocker les données.</p>
+    ${FSA ? `<button class="opt" data-act="openFile"><b>Ouvrir la base partagée</b><span class="muted small">Sélectionner le fichier .json du dossier partagé (à faire une fois par poste).</span></button>
+    <button class="opt" data-act="createFile"><b>Créer une nouvelle base</b><span class="muted small">Créer le fichier .json dans le dossier partagé.</span></button>` : ''}
+    <button class="opt" data-act="useLocal"><b>Travailler en local</b><span class="muted small">Données conservées dans ce navigateur${FSA ? '' : ' (seule option avec ce navigateur ; utilisez Chrome ou Edge pour partager)'}.</span></button>
+    </div>`;
+}
+/* ---------- Sortie / Entrée : pages dédiées ---------- */
+/* Choix d'une fiche individuelle avant de saisir un mouvement (page Entrée ou Sortie). */
+function fichePicker(kind){
+  const persons = activePersons();
+  return `<div class="card"><div class="sec-h"><h3>Choisir une fiche individuelle</h3></div>
+    ${persons.length ? `<div class="tw"><table class="tbl"><tbody>${persons.map(x => `<tr class="click" data-act="go${kind === 'entree' ? 'Entree' : 'Sortie'}" data-id="${esc(x.id)}">
+      <td><b>${esc((x.nom || '').toUpperCase())}</b></td><td>${esc(x.prenom)}</td><td class="muted">${esc(x.ecrou)}</td><td class="muted">${esc(x.batiment)}</td><td><span class="b blue">${secteurLabel(x.secteur)}</span></td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty">Aucune fiche individuelle — créez-en une dans l’onglet Fiches.</div>'}</div>`;
+}
+/* Date affichée à côté du nom de la fiche sur les pages Entrée/Sortie (informatif, pré-rempli avec le jour). */
+function opDateField(){ return `<label class="date-field">Date<input type="date" id="op-page-date" value="${today()}"></label>`; }
+/* Espace de signature imprimable, identique à celui de la fiche individuelle. */
+function signBlock(p, extraClass){ return `<div class="sign${extraClass ? ' ' + extraClass : ''}"><p>Je reconnais avoir reçu / détenir les références listées ci-dessus — le ${fmtDate(today())}.</p><div>Signature de ${esc(pname(p))}</div></div>`; }
+function vEntree(r){
+  const p = r && r.id ? DB.personnes.find(x => x.id === r.id) : null;
+  if (!p) return `<div class="page-h"><h2>Entrée</h2></div>${fichePicker('entree')}`;
+  return `<div class="page-h"><h2>Entrée — ${esc(pname(p))} <span class="b blue">${secteurLabel(p.secteur)}</span></h2>${opDateField()}<div class="sp"></div>
+    <div class="actions noprint"><button class="btn" data-act="print">Imprimer la fiche</button><a class="btn" href="#/entree">Changer de fiche</a></div></div>
+  <div class="muted" style="margin:-10px 0 14px">${esc([p.ecrou ? 'Écrou ' + p.ecrou : '', p.batiment].filter(Boolean).join(' · ') || '—')}</div>
+  ${refChecklistHTML(p, 'entree', { wrapCard:true })}
+  ${signBlock(p)}`;
+}
+function vSortie(r){
+  const p = r && r.id ? DB.personnes.find(x => x.id === r.id) : null;
+  if (!p) return `<div class="page-h"><h2>Sortie</h2></div>${fichePicker('sortie')}`;
+  return `<div class="page-h"><h2>Sortie — ${esc(pname(p))} <span class="b blue">${secteurLabel(p.secteur)}</span></h2>${opDateField()}<div class="sp"></div>
+    <div class="actions noprint"><button class="btn" data-act="print">Imprimer la fiche</button><a class="btn" href="#/sortie">Changer de fiche</a></div></div>
+  <div class="muted" style="margin:-10px 0 14px">${esc([p.ecrou ? 'Écrou ' + p.ecrou : '', p.batiment].filter(Boolean).join(' · ') || '—')}</div>
+  ${refChecklistHTML(p, 'sortie', { wrapCard:true })}
+  ${signBlock(p)}`;
+}
+function listPersonnes(){
+  const c = calc(), q = norm(UI.q);
+  const rows = DB.personnes.filter(p => (UI.showArch || !p.archive) && (!q || norm([p.nom, p.prenom, p.ecrou, p.batiment, secteurLabel(p.secteur)].join(' ')).includes(q)))
+    .sort((a, b) => norm(pname(a)).localeCompare(norm(pname(b))));
+  if (!rows.length) return '<div class="empty">Aucune fiche individuelle.</div>';
+  return `<div class="tw"><table class="tbl"><thead><tr><th>Nom</th><th>Prénom</th><th>N° d’écrou</th><th>Bâtiment</th><th>Secteur</th><th class="num">Unités détenues</th><th class="noprint"></th></tr></thead><tbody>
+    ${rows.map(p => `<tr class="click${p.archive ? ' off' : ''}" data-act="goPersonne" data-id="${esc(p.id)}"><td><b>${esc((p.nom || '').toUpperCase())}</b></td><td>${esc(p.prenom)}</td><td>${esc(p.ecrou)}</td><td>${esc(p.batiment)}</td><td><span class="b blue">${secteurLabel(p.secteur)}</span></td><td class="num">${c.heldPerson[p.id] || 0}</td>
+      <td class="right nowrap noprint">${p.archive ? `<button type="button" class="btn sm" data-act="archivePersonne" data-id="${esc(p.id)}">Restaurer</button> ` : ''}<button type="button" class="btn sm danger" data-act="deletePersonne" data-id="${esc(p.id)}">Supprimer</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function listArchives(){
+  const q = norm(UI.aq);
+  const rows = DB.personnes.filter(p => p.archive && (!q || norm([p.nom, p.prenom, p.ecrou, p.batiment, secteurLabel(p.secteur)].join(' ')).includes(q)))
+    .sort((a, b) => norm(pname(a)).localeCompare(norm(pname(b))));
+  if (!rows.length) return '<div class="empty">Aucune fiche archivée.</div>';
+  return `<div class="tw"><table class="tbl"><thead><tr><th>Nom</th><th>Prénom</th><th>N° d’écrou</th><th>Bâtiment</th><th>Secteur</th><th></th></tr></thead><tbody>
+    ${rows.map(p => `<tr><td><b>${esc((p.nom || '').toUpperCase())}</b></td><td>${esc(p.prenom)}</td><td>${esc(p.ecrou)}</td><td>${esc(p.batiment)}</td><td><span class="b blue">${secteurLabel(p.secteur)}</span></td>
+      <td class="right"><button class="btn sm" data-act="goPersonne" data-id="${esc(p.id)}">Voir la fiche</button>
+      <button class="btn sm" data-act="archivePersonne" data-id="${esc(p.id)}">Restaurer</button>
+      ${levelAtLeast('admin') ? `<button class="btn sm danger" data-act="deletePersonne" data-id="${esc(p.id)}">Supprimer définitivement</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function vArchives(){
+  return `<div class="page-h"><h2>Archives</h2></div>
+  <div class="card"><div class="sec-h"><div class="filters" style="padding:0;width:100%">
+    <input data-f="aq" placeholder="Filtrer la liste…" value="${esc(UI.aq)}"></div></div>
+    <div id="list">${listArchives()}</div></div>`;
+}
+function vPersonnes(){
+  return `<div class="page-h"><h2>Fiches</h2><div class="sp"></div><button class="btn" data-act="exportXlsx" data-scope="personnes">Exporter en Excel</button><button class="btn primary" data-act="newPersonne">+ Nouvelle fiche individuelle</button></div>
+  <div class="card"><div class="sec-h"><div class="filters" style="padding:0;width:100%">
+    <input data-f="q" placeholder="Filtrer la liste…" value="${esc(UI.q)}">
+    <label class="chk"><input type="checkbox" data-f="showArch" ${UI.showArch ? 'checked' : ''}> Afficher les archivées</label></div></div>
+    <div id="list">${listPersonnes()}</div></div>`;
+}
+/* Lignes de la fiche inventaire d'une personne : catalogue complet (actif), une ligne par référence,
+   triées par catégorie puis désignation. S'affiche en totalité dès la création de la fiche. */
+function ficheRows(p){
+  const sec = p.secteur || 'cdh';
+  return DB.articles.filter(a => !a.archive && artSecteurs(a).includes(sec)).map(a => ({ a, q:heldOf(p.id, a.id), aid:a.id }))
+    .sort((x, y) => norm(x.a.categorie || '~').localeCompare(norm(y.a.categorie || '~')) || norm(alabel(x.a)).localeCompare(norm(alabel(y.a))));
+}
+/* Regroupe les lignes en blocs par catégorie (jamais coupés) puis les répartit entre 2 colonnes.
+   sequential=true : remplit la colonne 1 dans l'ordre jusqu'à environ la moitié des lignes avant de
+   passer à la colonne 2 (ordre de lecture haut en bas conservé — ex. Entrée : Linge de toilette doit
+   rester sous Linge de maison plutôt que passer dans l'autre colonne). Sinon, équilibrage glouton
+   (chaque catégorie va à la colonne la moins remplie), utilisé pour la fiche individuelle et Sortie. */
+function splitCategoryCols(rows, sequential){
+  const blocks = []; let cur = null;
+  for (const h of rows) {
+    const k = (h.a.categorie || '').trim() || NOCAT;
+    if (!cur || cur.cat !== k) { cur = { cat:k, rows:[] }; blocks.push(cur); }
+    cur.rows.push(h);
+  }
+  const cols = [[], []], len = [0, 0];
+  if (sequential){
+    const target = Math.ceil(rows.length / 2);
+    let col = 0;
+    for (const b of blocks) {
+      if (col === 0 && len[0] > 0 && len[0] + b.rows.length > target) col = 1;
+      cols[col].push(b); len[col] += b.rows.length;
+    }
+    return cols;
+  }
+  for (const b of blocks) { const i = len[0] <= len[1] ? 0 : 1; cols[i].push(b); len[i] += b.rows.length; }
+  return cols;
+}
+/* Rendu d'une colonne de blocs (catégories) en tableau ; mode : 'full' (entrée+sortie, comme la fiche
+   individuelle), 'entree' (bouton Entrée seul) ou 'sortie' (bouton Sortie seul, si quantité détenue). */
+function refColHTML(blocks, p, c, catTot, mode){
+  if (!blocks.length) return '';
+  const isFull = mode === 'full', showLast = isFull, colspan = isFull ? 6 : 5;
+  /* Sur la fiche individuelle (mode 'full'), seules les lignes détenues comptent pour la signature :
+     les lignes à 0 sont masquées à l'impression. Sur Entrée/Sortie, la feuille sert de check-list
+     complète : toutes les références doivent rester imprimées, quelle que soit la quantité. La colonne
+     « Réf. » (code référence) n'est affichée nulle part : la colonne Référence (désignation) récupère
+     systématiquement cette largeur. */
+  const hideZero = isFull;
+  const rowsHtml = blocks.map(b => {
+    const kc = catColor(b.cat), zeroCat = hideZero && !catTot[b.cat];
+    const head = `<tr class="catrow${zeroCat ? ' noprint' : ''}"><td colspan="${colspan}"><span class="cat-dot" style="background:${kc}"></span>${esc(b.cat)}${catTot[b.cat] ? ` <span class="muted">— ${catTot[b.cat]} unité${catTot[b.cat] > 1 ? 's' : ''}</span>` : ''}</td></tr>`;
+    return head + b.rows.map(h => {
+      const atMax = +h.a.stockMax > 0 && h.q >= +h.a.stockMax;
+      const btns = (mode !== 'sortie' ? `<button class="btn sm" data-act="entree" data-pid="${esc(p.id)}" data-aid="${esc(h.aid)}">Entrée</button>` : '')
+        + (mode !== 'entree' && h.q ? `${mode !== 'sortie' ? ' ' : ''}<button class="btn sm" data-act="sortie" data-pid="${esc(p.id)}" data-aid="${esc(h.aid)}">Sortie</button>` : '');
+      /* En mode 'full', la colonne actions peut porter 2 boutons (Entrée + Sortie) : on autorise le
+         retour à la ligne (pas de nowrap) pour qu'ils s'empilent au lieu de forcer un défilement
+         horizontal dans une colonne étroite. */
+      return `<tr${hideZero && !h.q ? ' class="noprint"' : ''}><td><span class="cat-dot" style="background:${kc}"></span><b style="font-size:13px">${esc(alabel(h.a))}</b></td><td class="num">${h.q}</td><td class="num">${+h.a.stockMax > 0 ? h.a.stockMax : '—'}</td><td>${atMax ? '<span class="b warn">Max</span>' : ''}</td>${showLast ? `<td class="nowrap">${fmtDate(c.lastEntree[p.id + '|' + h.aid])}</td>` : ''}
+        <td class="right noprint${isFull ? '' : ' nowrap'}">${btns}</td></tr>`;
+    }).join('');
+  }).join('');
+  /* Largeurs fixes pour que toutes les colonnes tiennent dans la largeur de la colonne (2 colonnes par
+     page) sans défilement horizontal : Stock réel/Stock max passent sur 2 lignes partout, et la fiche
+     individuelle (7 colonnes, plus dense) reçoit en plus une police resserrée. À l'impression, la colonne
+     actions (noprint) disparaît : .tbl-ops repasse alors en largeurs automatiques (règle dans @media print)
+     pour que Référence récupère tout l'espace au lieu de laisser un vide à droite. */
+  const widths = isFull
+    ? { ref:'36%', sr:'9%', sm:'9%', statut:'10%', last:'17%', act:'19%' }
+    : { ref:'50%', sr:'10%', sm:'10%', statut:'14%', act:'16%' };
+  return `<div class="tw"><table class="tbl tbl-ops${isFull ? ' tbl-tight' : ''}" style="table-layout:fixed${isFull ? ';font-size:11.5px' : ''}"><thead><tr>
+    <th style="width:${widths.ref}">Référence</th>
+    <th class="num" style="width:${widths.sr};white-space:normal">Stock<br>réel</th>
+    <th class="num" style="width:${widths.sm};white-space:normal">Stock<br>max</th>
+    <th style="width:${widths.statut}">Statut</th>${showLast ? `<th style="width:${widths.last};white-space:normal">Dernière<br>entrée</th>` : ''}
+    <th class="noprint" style="width:${widths.act}"></th>
+  </tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+}
+/* Fiche inventaire complète d'une personne, sur 2 colonnes. mode : 'full' | 'entree' | 'sortie'.
+   wrapCard : chaque colonne est placée dans sa propre carte (tableau distinct par colonne), sans
+   titre englobant — utilisé pour les pages Entrée/Sortie. */
+/* Catégories exclues de la page Entrée (restent visibles en Sortie et sur la fiche individuelle). */
+const ENTREE_CATS_EXCLUES = ['Divers', 'Nécessaire de cuisine'];
+function refChecklistHTML(p, mode, { wrapCard = false } = {}){
+  const c = calc();
+  let rows = ficheRows(p);
+  if (mode === 'entree') rows = rows.filter(h => !ENTREE_CATS_EXCLUES.includes((h.a.categorie || '').trim()));
+  if (!rows.length) return '<div class="empty">Aucune référence dans le catalogue — ajoutez-en une.</div>';
+  const catTot = {}; for (const h of rows) { const k = (h.a.categorie || '').trim() || NOCAT; catTot[k] = (catTot[k] || 0) + h.q; }
+  const cols = splitCategoryCols(rows, mode === 'entree');
+  return `<div class="refs-2col">${cols.map(b => { const t = refColHTML(b, p, c, catTot, mode); return wrapCard ? `<div class="card">${t}</div>` : t; }).join('')}</div>`;
+}
+function vPersonne(r){
+  const p = DB.personnes.find(x => x.id === r.id);
+  if (!p) return `<a class="back" href="#/personnes">← Fiches individuelles</a><div class="card empty">Fiche introuvable.</div>`;
+  const c = calc();
+  const hist = sortedMvts().filter(m => m.personneId === p.id);
+  const ini = ((p.prenom || '')[0] || '') + ((p.nom || '')[0] || '');
+  return `<a class="back" href="#/personnes">← Fiches individuelles</a>
+  <div class="fiche-head"><div class="avatar">${esc(ini.toUpperCase())}</div>
+    <div><h2>${esc(pname(p))} <span class="b blue">${secteurLabel(p.secteur)}</span> ${p.archive ? '<span class="b bad">archivé</span>' : ''}</h2>
+    <div class="muted">${esc([p.ecrou ? 'Écrou ' + p.ecrou : '', p.batiment].filter(Boolean).join(' · ') || '—')}</div></div><div class="sp"></div>
+    <div class="actions noprint"><button class="btn" data-act="printFiche">Imprimer la fiche</button><button class="btn" data-act="printHistorique">Imprimer l'historique</button><button class="btn" data-act="exportXlsx" data-scope="fiche" data-id="${esc(p.id)}">Exporter en Excel</button>
+    ${p.archive
+      ? `<button class="btn" data-act="editPersonne" data-id="${esc(p.id)}">Modifier</button><button class="btn danger" data-act="archivePersonne" data-id="${esc(p.id)}">Restaurer</button>${levelAtLeast('admin') ? `<button class="btn danger" data-act="deletePersonne" data-id="${esc(p.id)}">Supprimer définitivement</button>` : ''}`
+      : `<button class="btn" data-act="editPersonne" data-id="${esc(p.id)}">Modifier</button><button class="btn danger" data-act="archivePersonne" data-id="${esc(p.id)}">Archiver</button>`}</div></div>
+  ${p.notes ? `<div class="notes">${esc(p.notes)}</div>` : ''}
+  <div class="card print-fiche" style="margin-bottom:16px"><div class="sec-h"><h3>Inventaire de la fiche (${c.heldPerson[p.id] || 0} unité${(c.heldPerson[p.id] || 0) > 1 ? 's' : ''})</h3></div>
+    ${refChecklistHTML(p, 'full')}</div>
+  <div class="card print-hist"><div class="sec-h"><h3>Historique</h3></div>
+    ${hist.length ? `<div class="tw"><table class="tbl"><thead><tr><th>Date</th><th>Opération</th><th>Référence</th><th class="num">Qté</th><th>Destinataire</th><th>Matricule agent</th><th>Note</th><th class="noprint"></th></tr></thead><tbody>${hist.map(m => mvtRow(m, { person:false, undo:true })).join('')}</tbody></table></div>`
+    : '<div class="empty">Aucun mouvement.</div>'}</div>
+  ${signBlock(p, 'print-fiche')}`;
+}
+/* Catalogue de référence : Inventaire */
+function catalogueRows(){
+  const q = norm(UI.q);
+  return DB.articles.filter(a => (UI.showArchA || !a.archive) && (!UI.cat || a.categorie === UI.cat) && (!UI.secteur || artSecteurs(a).includes(UI.secteur))
+      && (!q || norm([a.ref, a.nom, a.categorie].join(' ')).includes(q)))
+    .sort((a, b) => (a.archive ? 1 : 0) - (b.archive ? 1 : 0) || norm(secteursLabel(artSecteurs(a))).localeCompare(norm(secteursLabel(artSecteurs(b)))) || norm(a.categorie).localeCompare(norm(b.categorie)) || norm(a.nom).localeCompare(norm(b.nom)));
+}
+function catalogueBody(){
+  const rows = catalogueRows();
+  if (!rows.length) return '<div class="empty">Aucune référence.</div>';
+  return `<div class="tw"><table class="tbl"><thead><tr><th>Désignation</th><th>Secteur</th><th>Catégorie</th><th class="num">Stock maximum</th><th class="noprint"></th></tr></thead><tbody>
+    ${rows.map(a => `<tr class="click${a.archive ? ' off' : ''}" data-act="openArticle" data-id="${esc(a.id)}"><td><span class="cat-dot" style="background:${catColor(a.categorie)}"></span><b>${esc(a.nom)}</b></td><td><span class="b blue">${secteursLabel(artSecteurs(a))}</span></td><td>${esc(a.categorie)}</td><td class="num">${+a.stockMax > 0 ? a.stockMax : '—'}</td>
+      <td class="right nowrap noprint">${a.archive
+        ? `<button type="button" class="btn sm" data-act="archiveArticle" data-id="${esc(a.id)}">Restaurer</button>${levelAtLeast('admin') ? ` <button type="button" class="btn sm danger" data-act="deleteArticle" data-id="${esc(a.id)}">Supprimer</button>` : ''}`
+        : `<button type="button" class="btn sm" data-act="editArticle" data-id="${esc(a.id)}">Modifier</button> <button type="button" class="btn sm danger" data-act="archiveArticle" data-id="${esc(a.id)}">Archiver</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function vInventaire(){
+  return `${needPerm ? `<div class="banner"><span>La base partagée doit être reconnectée pour ce poste.</span><button class="btn primary" data-act="reconnect">Reconnecter</button></div>` : ''}
+  <div class="page-h"><h2>Références</h2><div class="sp"></div><button class="btn" data-act="exportXlsx" data-scope="inventaire">Exporter en Excel</button><button class="btn" data-act="importList">Importer une liste</button><button class="btn primary" data-act="newArticle">+ Nouvelle référence</button></div>
+  <div class="card"><div class="sec-h"><div class="filters" style="padding:0;width:100%">
+    <input data-f="q" placeholder="Filtrer la liste…" value="${esc(UI.q)}">
+    <select data-f="secteur"><option value="">Tous les secteurs</option>${opts(secteursList(), x => x[0], x => x[1], UI.secteur)}</select>
+    <select data-f="cat"><option value="">Toutes les catégories</option>${opts(categories(), x => x, x => x, UI.cat)}</select>
+    <label class="chk"><input type="checkbox" data-f="showArchA" ${UI.showArchA ? 'checked' : ''}> Afficher les archivées</label></div></div>
+    <div id="list">${catalogueBody()}</div></div>`;
+}
+function listMvts(){
+  const q = norm(UI.mq), A = id => DB.articles.find(x => x.id === id), P = id => DB.personnes.find(x => x.id === id);
+  const rows = sortedMvts().filter(m => (!UI.mtype || m.type === UI.mtype) && (!q || norm([A(m.articleId)?.nom ?? m.articleNom, A(m.articleId)?.ref ?? m.articleRef, P(m.personneId)?.nom ?? m.personNom, P(m.personneId)?.prenom ?? m.personPrenom, P(m.personneId)?.ecrou ?? m.personEcrou, m.destinataire, m.note, m.parMat].join(' ')).includes(q)));
+  if (!rows.length) return '<div class="empty">Aucun mouvement.</div>';
+  return `<div class="tw"><table class="tbl"><thead><tr><th>Date</th><th>Type</th><th>Référence</th><th>Fiche</th><th>N° d’écrou</th><th class="num">Qté</th><th>Destinataire</th><th>Matricule agent</th><th>Note</th><th></th></tr></thead><tbody>${rows.slice(0, 500).map(m => mvtRow(m, { undo:true })).join('')}</tbody></table></div>
+    ${rows.length > 500 ? `<div class="empty">${rows.length - 500} mouvements plus anciens non affichés — utilisez l’export Excel.</div>` : ''}`;
+}
+function vMouvements(){
+  return `<div class="page-h"><h2>Historique</h2><div class="sp"></div><button class="btn" data-act="exportXlsx" data-scope="mouvements">Exporter en Excel</button></div>
+  <div class="card"><div class="sec-h"><div class="filters" style="padding:0;width:100%">
+    <input data-f="mq" placeholder="Filtrer (référence, fiche, écrou, destinataire, matricule, note…)" value="${esc(UI.mq)}">
+    <select data-f="mtype"><option value="">Tous les types</option>${Object.entries(TYPES).map(([k, v]) => `<option value="${k}"${UI.mtype === k ? ' selected' : ''}>${v.l}</option>`).join('')}</select></div></div>
+    <div id="list">${listMvts()}</div></div>`;
+}
+
+/* ---------- Routage ---------- */
+function route(){ const [name0, id] = location.hash.replace(/^#\/?/, '').split('/'); const name = !name0 || name0 === 'accueil' ? 'personnes' : name0; return { name, id }; }
+function setupDone(){ return mode === 'file' || needPerm || hasData() || LS.get('inventaire_local_ok') === '1'; }
+const FICHES_GROUP = ['personnes', 'personne'];
+function render(){
+  const r = route(), views = { personnes:vPersonnes, personne:vPersonne, inventaire:vInventaire, sortie:vSortie, entree:vEntree, mouvements:vMouvements, archives:vArchives };
+  document.querySelectorAll('#tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === r.name || (FICHES_GROUP.includes(r.name) && a.dataset.tab === 'fiches')));
+  const scroll = window.scrollY;
+  $('#view').innerHTML = !setupDone() ? vWelcome() : (views[r.name] || vInventaire)(r);
+  window.scrollTo(0, scroll);
+}
+window.addEventListener('hashchange', () => { closeAllModals(); hideAdminMenu(); render(); window.scrollTo(0, 0); });
+
+/* ---------- Actions ---------- */
+const ACT = {
+  goPersonne(d){ closeAllModals(); hideSearch(); $('#q').value = ''; const t = '#/personne/' + d.id; if (location.hash === t) render(); else location.hash = t; },
+  goEntree(d){ const t = '#/entree/' + d.id; if (location.hash === t) render(); else location.hash = t; },
+  goSortie(d){ const t = '#/sortie/' + d.id; if (location.hash === t) render(); else location.hash = t; },
+  openArticle(d){ hideSearch(); $('#q').blur(); openArticle(d.id); },
+  newPersonne(){ fPersonne(); }, editPersonne(d){ fPersonne(d.id); }, archivePersonne(d){ toggleArchive('p', d.id); }, deletePersonne(d){ requireLevel('admin', () => deletePersonne(d.id)); },
+  newArticle(){ fArticle(); }, editArticle(d){ fArticle(d.id); }, archiveArticle(d){ toggleArchive('a', d.id); }, deleteArticle(d){ requireLevel('admin', () => deleteArticle(d.id)); },
+  importList(){ fImportList(); },
+  deleteMvt(d){ requireLevel('admin', () => deleteMvt(d.id)); },
+  selectMvt(d){ UI.mvtSel = UI.mvtSel === d.id ? null : d.id; render(); },
+  toggleAdminMenu(){ const m = $('#admin-menu'); if (!m) return; m.hidden = !m.hidden; },
+  setLevel(d){ hideAdminMenu(); const target = d.lvl;
+    if (LEVELS[target] <= LEVELS[userLevel]) { userLevel = target; setAdminStatus(); render(); toast('Mode ' + LEVEL_LABEL[target] + ' activé'); }
+    else requireLevel(target, () => {});
+  },
+  cycleTheme(){ const cur = document.documentElement.getAttribute('data-theme') || 'auto', next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length]; LS.set('inventaire_theme', next); applyTheme(next); },
+  entree(d){ fEntree(d.pid, d.aid); }, sortie(d){ fSortie(d.pid, d.aid); }, annuler(d){ fAnnuler(d.id); },
+  print(){ window.print(); }, data(){ fData(); },
+  /* Fiche individuelle : deux impressions distinctes — la fiche (inventaire + signature) ou
+     l'historique des mouvements — pilotées par une classe sur <body> lue par les règles @media print. */
+  printFiche(){ document.body.classList.add('print-fiche-only'); document.body.classList.remove('print-hist-only'); window.print(); },
+  printHistorique(){ document.body.classList.add('print-hist-only'); document.body.classList.remove('print-fiche-only'); window.print(); },
+  openFile, createFile, reconnect, saveNow(){ dirty = true; saveNow(); refreshFromFile(); }, exportXlsx, exportJson,
+  importJson(){ $('#imp').click(); },
+  closeModal(d, el){ el.closest('.overlay').remove(); },
+  useLocal(){ LS.set('inventaire_local_ok', '1'); setStatus(); render(); ensureUser(); },
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const fn = ACT[el.dataset.act]; if (!fn) return;
+  if (el.tagName === 'A') e.preventDefault();
+  // Action lancée depuis une fenêtre (ex. détail référence) : on la ferme pour éviter les données périmées
+  const ov = el.closest('.overlay');
+  if (ov && ['entree', 'sortie', 'editArticle', 'archiveArticle', 'openArticle'].includes(el.dataset.act)) ov.remove();
+  fn(el.dataset, el);
+});
+window.addEventListener('afterprint', () => document.body.classList.remove('print-fiche-only', 'print-hist-only'));
+document.addEventListener('input', e => {
+  const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+  UI[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  const l = $('#list'); if (!l) return; const n = route().name;
+  l.innerHTML = n === 'personnes' ? listPersonnes() : n === 'archives' ? listArchives() : n === 'inventaire' ? catalogueBody() : listMvts();
+});
+$('#imp').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const o = normalizeDB(JSON.parse(await f.text())); DB = mergeDB(DB, o); commit(); closeAllModals(); toast('Sauvegarde importée et fusionnée'); }
+  catch (err) { alertBox('Fichier invalide : ' + err.message); }
+});
+
+/* ---------- Démarrage ---------- */
+/* Thème : clair / sombre / auto (suit le système). Appliqué très tôt (voir <script> en tête de page) pour éviter tout flash. */
+const THEME_ORDER = ['auto', 'light', 'dark'], THEME_LABEL = { auto:'Auto', light:'Clair', dark:'Sombre' };
+function applyTheme(t){
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  else document.documentElement.removeAttribute('data-theme');
+  const el = $('#theme-t'); if (el) el.textContent = THEME_LABEL[t] || THEME_LABEL.auto;
+}
+async function boot(){
+  USER_MAT = LS.get('inventaire_matricule') || '';
+  applyTheme(LS.get('inventaire_theme') || 'auto');
+  try { const c = LS.get('inventaire_cache'); if (c) DB = normalizeDB(JSON.parse(c)); } catch {}
+  if (FSA) {
+    try {
+      const h = await idb('get', 'handle');
+      if (h) {
+        pendingHandle = h;
+        if ((await h.queryPermission({ mode:'readwrite' })) === 'granted') await useHandle(h);
+        else needPerm = true;
+      }
+    } catch {}
+  }
+  setStatus(); render();
+  if (!USER_MAT && setupDone()) askUser();
+  setInterval(refreshFromFile, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFromFile(); });
+}
+boot();
+</script>
+</body>
+</html>
